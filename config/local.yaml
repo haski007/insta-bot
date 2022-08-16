@@ -1,0 +1,8 @@
+clients:
+  instapi:
+    addr: "http://localhost:1234"
+    username: ""
+    password: ""
+telegram_bot:
+  token: ""
+  creator_user_id: 0
