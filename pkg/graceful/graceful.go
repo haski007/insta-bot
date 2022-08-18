@@ -3,14 +3,11 @@ package graceful
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/haski007/insta-bot/pkg/factory"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/haski007/insta-bot/internal/bot"
 
 	"github.com/sirupsen/logrus"
 )
@@ -50,15 +47,15 @@ func HTTP(srv *http.Server) CloseFunc {
 	}
 }
 
-func TGBOT(srv *tgbotapi.BotAPI, creator int64) CloseFunc {
+func TGBOT(srv bot.TgBot) CloseFunc {
 	return func() error {
-		if err := factory.NotifyCreator(
-			srv,
-			creator,
-			"Bot got signal so it's shutting down...",
-		); err != nil {
-			return fmt.Errorf("gracefull shutdown err: %w", err)
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+
+		if err := srv.StopPool(ctx); err != nil {
+			return err
 		}
+
 		return nil
 	}
 }

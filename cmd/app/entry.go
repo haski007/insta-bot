@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
-	"github.com/haski007/pretty"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -31,17 +30,23 @@ func Run(ctx context.Context, args run.Args) error {
 		return fmt.Errorf("load config %s err: %w", args.ConfigFile, err)
 	}
 
-	logrus.Println("Run func")
-	logrus.Println("cfg:", pretty.String(cfg))
-
 	httpMux := http.NewServeMux()
 	httpMux.Handle("/metrics", promhttp.Handler())
 
 	metricsServer := &http.Server{Addr: args.MetricsAddr, Handler: httpMux}
 
-	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
+	botApi, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
 	if err != nil {
 		return fmt.Errorf("new tg bot api err: %w", err)
+	}
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = cfg.TelegramBot.UpdatesTimeoutSec
+	chUpdates := botApi.GetUpdatesChan(u)
+
+	botSrv := listener.NewInstaBotService(botApi, cfg.TelegramBot.CreatorUserID, chUpdates).SetLogger(log)
+	if err := tgbotapi.SetLogger(log); err != nil {
+		return fmt.Errorf("set looger for tgbotapi package err: %w", err)
 	}
 
 	var server errgroup.Group
@@ -49,7 +54,17 @@ func Run(ctx context.Context, args run.Args) error {
 	server.Go(func() error {
 		defer stop()
 
-		time.Sleep(time.Second * 4)
+		me, er := botApi.GetMe()
+		if er != nil {
+			logrus.WithError(err).Println("bot api getMe")
+		}
+
+		log.Infof("bot @%s is polling now", me.UserName)
+
+		if errL := botSrv.StartPool(); errL != nil {
+			logrus.WithError(err).Println("bot listener exit with error")
+		}
+
 		return nil
 	})
 
@@ -58,7 +73,7 @@ func Run(ctx context.Context, args run.Args) error {
 		log.Infof("metrics service listening on %s", args.MetricsAddr)
 
 		if errLA := metricsServer.ListenAndServe(); errLA != nil && !errors.Is(errLA, http.ErrServerClosed) {
-			logrus.Errorf("metrics server exit with error: %s", errLA)
+			logrus.WithError(err).Println("metrics server exit with error")
 		}
 
 		return nil
@@ -66,7 +81,7 @@ func Run(ctx context.Context, args run.Args) error {
 
 	go graceful.Shutdown(
 		ctx,
-		graceful.TGBOT(bot, cfg.TelegramBot.CreatorUserID),
+		graceful.TGBOT(botSrv),
 		graceful.HTTP(metricsServer),
 		graceful.CloseFunc(func() error {
 			stop()
