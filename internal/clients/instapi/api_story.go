@@ -18,15 +18,14 @@ import (
 	"net/url"
 )
 
-
 // StoryApiService StoryApi service
 type StoryApiService service
 
 type ApiStoryDeleteStoryDeletePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	sessionid *string
-	storyPk *int32
+	sessionid  *string
+	storyPk    *int32
 }
 
 func (r ApiStoryDeleteStoryDeletePostRequest) Sessionid(sessionid string) ApiStoryDeleteStoryDeletePostRequest {
@@ -46,27 +45,27 @@ func (r ApiStoryDeleteStoryDeletePostRequest) Execute() (bool, *http.Response, e
 /*
 StoryDeleteStoryDeletePost Story Delete
 
-Delete story
-    
+# Delete story
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryDeleteStoryDeletePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryDeleteStoryDeletePostRequest
 */
 func (a *StoryApiService) StoryDeleteStoryDeletePost(ctx context.Context) ApiStoryDeleteStoryDeletePostRequest {
 	return ApiStoryDeleteStoryDeletePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *StoryApiService) StoryDeleteStoryDeletePostExecute(r ApiStoryDeleteStoryDeletePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryDeleteStoryDeletePost")
@@ -152,12 +151,12 @@ func (a *StoryApiService) StoryDeleteStoryDeletePostExecute(r ApiStoryDeleteStor
 }
 
 type ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	sessionid *string
-	url *string
-	filename *string
-	folder *string
+	sessionid  *string
+	url        *string
+	filename   *string
+	folder     *string
 	returnFile *bool
 }
 
@@ -193,27 +192,27 @@ func (r ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest) Execute() (interface
 /*
 StoryDownloadByUrlStoryDownloadByUrlPost Story Download By Url
 
-Download story media using URL
-    
+# Download story media using URL
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest
 */
 func (a *StoryApiService) StoryDownloadByUrlStoryDownloadByUrlPost(ctx context.Context) ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest {
 	return ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *StoryApiService) StoryDownloadByUrlStoryDownloadByUrlPostExecute(r ApiStoryDownloadByUrlStoryDownloadByUrlPostRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryDownloadByUrlStoryDownloadByUrlPost")
@@ -308,12 +307,12 @@ func (a *StoryApiService) StoryDownloadByUrlStoryDownloadByUrlPostExecute(r ApiS
 }
 
 type ApiStoryDownloadStoryDownloadPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	sessionid *string
-	storyPk *int32
-	filename *string
-	folder *string
+	sessionid  *string
+	storyPk    *int32
+	filename   *string
+	folder     *string
 	returnFile *bool
 }
 
@@ -350,26 +349,26 @@ func (r ApiStoryDownloadStoryDownloadPostRequest) Execute() (interface{}, *http.
 StoryDownloadStoryDownloadPost Story Download
 
 Download story media by media_type
-    
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryDownloadStoryDownloadPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryDownloadStoryDownloadPostRequest
 */
 func (a *StoryApiService) StoryDownloadStoryDownloadPost(ctx context.Context) ApiStoryDownloadStoryDownloadPostRequest {
 	return ApiStoryDownloadStoryDownloadPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *StoryApiService) StoryDownloadStoryDownloadPostExecute(r ApiStoryDownloadStoryDownloadPostRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryDownloadStoryDownloadPost")
@@ -464,11 +463,11 @@ func (a *StoryApiService) StoryDownloadStoryDownloadPostExecute(r ApiStoryDownlo
 }
 
 type ApiStoryInfoStoryInfoPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	sessionid *string
-	storyPk *int32
-	useCache *bool
+	sessionid  *string
+	storyPk    *string
+	useCache   *bool
 }
 
 func (r ApiStoryInfoStoryInfoPostRequest) Sessionid(sessionid string) ApiStoryInfoStoryInfoPostRequest {
@@ -476,7 +475,7 @@ func (r ApiStoryInfoStoryInfoPostRequest) Sessionid(sessionid string) ApiStoryIn
 	return r
 }
 
-func (r ApiStoryInfoStoryInfoPostRequest) StoryPk(storyPk int32) ApiStoryInfoStoryInfoPostRequest {
+func (r ApiStoryInfoStoryInfoPostRequest) StoryPk(storyPk string) ApiStoryInfoStoryInfoPostRequest {
 	r.storyPk = &storyPk
 	return r
 }
@@ -493,27 +492,27 @@ func (r ApiStoryInfoStoryInfoPostRequest) Execute() (*Story, *http.Response, err
 /*
 StoryInfoStoryInfoPost Story Info
 
-Get Story by pk or id
-    
+# Get Story by pk or id
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryInfoStoryInfoPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryInfoStoryInfoPostRequest
 */
 func (a *StoryApiService) StoryInfoStoryInfoPost(ctx context.Context) ApiStoryInfoStoryInfoPostRequest {
 	return ApiStoryInfoStoryInfoPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return Story
+//
+//	@return Story
 func (a *StoryApiService) StoryInfoStoryInfoPostExecute(r ApiStoryInfoStoryInfoPostRequest) (*Story, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *Story
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *Story
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryInfoStoryInfoPost")
@@ -602,9 +601,9 @@ func (a *StoryApiService) StoryInfoStoryInfoPostExecute(r ApiStoryInfoStoryInfoP
 }
 
 type ApiStoryPkFromUrlStoryPkFromUrlGetRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	url *string
+	url        *string
 }
 
 func (r ApiStoryPkFromUrlStoryPkFromUrlGetRequest) Url(url string) ApiStoryPkFromUrlStoryPkFromUrlGetRequest {
@@ -619,27 +618,27 @@ func (r ApiStoryPkFromUrlStoryPkFromUrlGetRequest) Execute() (interface{}, *http
 /*
 StoryPkFromUrlStoryPkFromUrlGet Story Pk From Url
 
-Get Story (media) PK from URL
-    
+# Get Story (media) PK from URL
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryPkFromUrlStoryPkFromUrlGetRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryPkFromUrlStoryPkFromUrlGetRequest
 */
 func (a *StoryApiService) StoryPkFromUrlStoryPkFromUrlGet(ctx context.Context) ApiStoryPkFromUrlStoryPkFromUrlGetRequest {
 	return ApiStoryPkFromUrlStoryPkFromUrlGetRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *StoryApiService) StoryPkFromUrlStoryPkFromUrlGetExecute(r ApiStoryPkFromUrlStoryPkFromUrlGetRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryPkFromUrlStoryPkFromUrlGet")
@@ -721,10 +720,10 @@ func (a *StoryApiService) StoryPkFromUrlStoryPkFromUrlGetExecute(r ApiStoryPkFro
 }
 
 type ApiStorySeenStorySeenPostRequest struct {
-	ctx context.Context
-	ApiService *StoryApiService
-	sessionid *string
-	storyPks *[]int32
+	ctx             context.Context
+	ApiService      *StoryApiService
+	sessionid       *string
+	storyPks        *[]int32
 	skippedStoryPks *[]int32
 }
 
@@ -750,27 +749,27 @@ func (r ApiStorySeenStorySeenPostRequest) Execute() (bool, *http.Response, error
 /*
 StorySeenStorySeenPost Story Seen
 
-Mark a media as seen
-    
+# Mark a media as seen
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStorySeenStorySeenPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStorySeenStorySeenPostRequest
 */
 func (a *StoryApiService) StorySeenStorySeenPost(ctx context.Context) ApiStorySeenStorySeenPostRequest {
 	return ApiStorySeenStorySeenPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *StoryApiService) StorySeenStorySeenPostExecute(r ApiStorySeenStorySeenPostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StorySeenStorySeenPost")
@@ -859,11 +858,11 @@ func (a *StoryApiService) StorySeenStorySeenPostExecute(r ApiStorySeenStorySeenP
 }
 
 type ApiStoryUserStoriesStoryUserStoriesPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *StoryApiService
-	sessionid *string
-	userId *string
-	amount *int32
+	sessionid  *string
+	userId     *string
+	amount     *int32
 }
 
 func (r ApiStoryUserStoriesStoryUserStoriesPostRequest) Sessionid(sessionid string) ApiStoryUserStoriesStoryUserStoriesPostRequest {
@@ -888,27 +887,27 @@ func (r ApiStoryUserStoriesStoryUserStoriesPostRequest) Execute() ([]Story, *htt
 /*
 StoryUserStoriesStoryUserStoriesPost Story User Stories
 
-Get a user's stories
-    
+# Get a user's stories
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiStoryUserStoriesStoryUserStoriesPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiStoryUserStoriesStoryUserStoriesPostRequest
 */
 func (a *StoryApiService) StoryUserStoriesStoryUserStoriesPost(ctx context.Context) ApiStoryUserStoriesStoryUserStoriesPostRequest {
 	return ApiStoryUserStoriesStoryUserStoriesPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []Story
+//
+//	@return []Story
 func (a *StoryApiService) StoryUserStoriesStoryUserStoriesPostExecute(r ApiStoryUserStoriesStoryUserStoriesPostRequest) ([]Story, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []Story
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []Story
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "StoryApiService.StoryUserStoriesStoryUserStoriesPost")

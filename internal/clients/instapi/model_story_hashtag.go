@@ -14,17 +14,16 @@ import (
 	"encoding/json"
 )
 
-type Hashtag struct{
-
+type Hashtag struct {
 }
 
 // StoryHashtag struct for StoryHashtag
 type StoryHashtag struct {
-	Hashtag Hashtag `json:"hashtag"`
-	X *float32 `json:"x,omitempty"`
-	Y *float32 `json:"y,omitempty"`
-	Width *float32 `json:"width,omitempty"`
-	Height *float32 `json:"height,omitempty"`
+	Hashtag Hashtag  `json:"hashtag"`
+	X       *float32 `json:"x,omitempty"`
+	Y       *float32 `json:"y,omitempty"`
+	Width   *float32 `json:"width,omitempty"`
+	Height  *float32 `json:"height,omitempty"`
 }
 
 // NewStoryHashtag instantiates a new StoryHashtag object
@@ -252,5 +251,3 @@ func (v *NullableStoryHashtag) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -53,8 +53,10 @@ func (rcv *InstaBotService) StartPool() error {
 
 		// Parse messages
 		if update.Message != nil {
-			if strings.Contains(update.Message.Text, "instagram") {
-				go rcv.msgInstagramLinkTrigger(update)
+			if strings.Contains(update.Message.Text, "https://www.instagram.com/") {
+				go rcv.msgMediaTrigger(update)
+			} else if strings.Contains(update.Message.Text, "https://instagram.com/stories") {
+				go rcv.msgStoriesTrigger(update)
 			}
 		}
 	}

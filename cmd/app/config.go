@@ -13,6 +13,8 @@ type Config struct {
 		Instapi factory.HTTPClient `yaml:"instapi"`
 	}
 	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
+
+	CaptionCharsLimit int `yaml:"caption_chars_limit"`
 }
 
 func Load(configFile string, cfg interface{}) error {

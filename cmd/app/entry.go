@@ -8,6 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/haski007/insta-bot/internal/bot/publisher"
+	"github.com/haski007/insta-bot/internal/clients/instapi"
+
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
@@ -44,7 +47,30 @@ func Run(ctx context.Context, args run.Args) error {
 	u.Timeout = cfg.TelegramBot.UpdatesTimeoutSec
 	chUpdates := botApi.GetUpdatesChan(u)
 
-	botSrv := listener.NewInstaBotService(botApi, cfg.TelegramBot.CreatorUserID, chUpdates).SetLogger(log)
+	instapiCfg := instapi.NewConfiguration()
+	instapiCfg.Host = cfg.Clients.Instapi.Addr
+	instapiCfg.Scheme = "http"
+	instapiCli := instapi.NewAPIClient(instapiCfg)
+
+	apiCli := publisher.New(
+		instapiCli,
+		cfg.Clients.Instapi.Username,
+		cfg.Clients.Instapi.Password)
+
+	// TODO: uncomment after debug
+	//if err := apiCli.Login(ctx); err != nil {
+	//	return fmt.Errorf("instapi entry login err: %w", err)
+	//}
+
+	botSrv := listener.NewInstaBotService(
+		ctx,
+		botApi,
+		apiCli,
+		cfg.TelegramBot.CreatorUserID,
+		chUpdates,
+		cfg.CaptionCharsLimit,
+	).SetLogger(log)
+
 	if err := tgbotapi.SetLogger(log); err != nil {
 		return fmt.Errorf("set looger for tgbotapi package err: %w", err)
 	}

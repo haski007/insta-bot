@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/haski007/insta-bot/internal/bot"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -11,21 +12,31 @@ import (
 
 type InstaBotService struct {
 	bot     *tgbotapi.BotAPI
+	instapi bot.InstApi
 	updates tgbotapi.UpdatesChannel
 
-	creatorID int64
-	log       logrus.FieldLogger
+	creatorID         int64
+	captionCharsLimit int
+	log               logrus.FieldLogger
+
+	ctx context.Context
 }
 
 func NewInstaBotService(
+	ctx context.Context,
 	botApi *tgbotapi.BotAPI,
+	instapi bot.InstApi,
 	creatorID int64,
 	updatesChan tgbotapi.UpdatesChannel,
+	captionCharsLimit int,
 ) *InstaBotService {
 	return &InstaBotService{
-		bot:       botApi,
-		creatorID: creatorID,
-		updates:   updatesChan,
+		bot:               botApi,
+		creatorID:         creatorID,
+		updates:           updatesChan,
+		instapi:           instapi,
+		ctx:               ctx,
+		captionCharsLimit: captionCharsLimit,
 	}
 }
 

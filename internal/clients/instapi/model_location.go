@@ -16,19 +16,19 @@ import (
 
 // Location struct for Location
 type Location struct {
-	Pk *int32 `json:"pk,omitempty"`
-	Name string `json:"name"`
-	Phone *string `json:"phone,omitempty"`
-	Website *string `json:"website,omitempty"`
-	Category *string `json:"category,omitempty"`
-	Hours map[string]interface{} `json:"hours,omitempty"`
-	Address *string `json:"address,omitempty"`
-	City *string `json:"city,omitempty"`
-	Zip *string `json:"zip,omitempty"`
-	Lng *float32 `json:"lng,omitempty"`
-	Lat *float32 `json:"lat,omitempty"`
-	ExternalId *int32 `json:"external_id,omitempty"`
-	ExternalIdSource *string `json:"external_id_source,omitempty"`
+	Pk               *int                   `json:"pk,omitempty"`
+	Name             string                 `json:"name"`
+	Phone            *string                `json:"phone,omitempty"`
+	Website          *string                `json:"website,omitempty"`
+	Category         *string                `json:"category,omitempty"`
+	Hours            map[string]interface{} `json:"hours,omitempty"`
+	Address          *string                `json:"address,omitempty"`
+	City             *string                `json:"city,omitempty"`
+	Zip              *string                `json:"zip,omitempty"`
+	Lng              *float32               `json:"lng,omitempty"`
+	Lat              *float32               `json:"lat,omitempty"`
+	ExternalId       *int32                 `json:"external_id,omitempty"`
+	ExternalIdSource *string                `json:"external_id_source,omitempty"`
 }
 
 // NewLocation instantiates a new Location object
@@ -74,17 +74,16 @@ func NewLocationWithDefaults() *Location {
 }
 
 // GetPk returns the Pk field value if set, zero value otherwise.
-func (o *Location) GetPk() int32 {
+func (o *Location) GetPk() int {
 	if o == nil || o.Pk == nil {
-		var ret int32
-		return ret
+		return 0
 	}
 	return *o.Pk
 }
 
 // GetPkOk returns a tuple with the Pk field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Location) GetPkOk() (*int32, bool) {
+func (o *Location) GetPkOk() (*int, bool) {
 	if o == nil || o.Pk == nil {
 		return nil, false
 	}
@@ -101,7 +100,7 @@ func (o *Location) HasPk() bool {
 }
 
 // SetPk gets a reference to the given int32 and assigns it to the Pk field.
-func (o *Location) SetPk(v int32) {
+func (o *Location) SetPk(v int) {
 	o.Pk = &v
 }
 
@@ -560,5 +559,3 @@ func (v *NullableLocation) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

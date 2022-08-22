@@ -1,8 +1,10 @@
 clients:
   instapi:
-    addr: "http://localhost:1234"
-    username: ""
-    password: ""
+    addr: "localhost:1234"
+    username: "haskistest"
+    password: "Haski12345"
 telegram_bot:
-  token: ""
-  creator_user_id: 0
+  token: "1273082145:AAGJr0p-9hMC8U2ffweI3GK0pJTdmIH_o-o"
+  creator_user_id: 370649141
+  updates_timeout_sec: 10
+caption_chars_limit: 512

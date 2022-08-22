@@ -9,3 +9,10 @@ func (rcv *InstaBotService) SendMessage(chatID int64, text string) error {
 	_, err := rcv.bot.Send(message)
 	return err
 }
+
+func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string) error {
+	message := tgbotapi.NewMessage(chatID, text)
+
+	_, err := rcv.bot.Send(message)
+	return err
+}

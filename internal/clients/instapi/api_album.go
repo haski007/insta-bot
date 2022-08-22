@@ -19,16 +19,15 @@ import (
 	"os"
 )
 
-
 // AlbumApiService AlbumApi service
 type AlbumApiService service
 
 type ApiAlbumDownloadAlbumDownloadPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *AlbumApiService
-	sessionid *string
-	mediaPk *int32
-	folder *string
+	sessionid  *string
+	mediaPk    *int32
+	folder     *string
 }
 
 func (r ApiAlbumDownloadAlbumDownloadPostRequest) Sessionid(sessionid string) ApiAlbumDownloadAlbumDownloadPostRequest {
@@ -53,27 +52,27 @@ func (r ApiAlbumDownloadAlbumDownloadPostRequest) Execute() ([]string, *http.Res
 /*
 AlbumDownloadAlbumDownloadPost Album Download
 
-Download photo using media pk
-    
+# Download photo using media pk
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiAlbumDownloadAlbumDownloadPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiAlbumDownloadAlbumDownloadPostRequest
 */
 func (a *AlbumApiService) AlbumDownloadAlbumDownloadPost(ctx context.Context) ApiAlbumDownloadAlbumDownloadPostRequest {
 	return ApiAlbumDownloadAlbumDownloadPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []string
+//
+//	@return []string
 func (a *AlbumApiService) AlbumDownloadAlbumDownloadPostExecute(r ApiAlbumDownloadAlbumDownloadPostRequest) ([]string, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []string
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []string
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlbumApiService.AlbumDownloadAlbumDownloadPost")
@@ -162,11 +161,11 @@ func (a *AlbumApiService) AlbumDownloadAlbumDownloadPostExecute(r ApiAlbumDownlo
 }
 
 type ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *AlbumApiService
-	sessionid *string
-	urls *[]string
-	folder *string
+	sessionid  *string
+	urls       *[]string
+	folder     *string
 }
 
 func (r ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest) Sessionid(sessionid string) ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest {
@@ -191,27 +190,27 @@ func (r ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest) Execute() ([]strin
 /*
 AlbumDownloadByUrlsAlbumDownloadByUrlsPost Album Download By Urls
 
-Download photo using URL
-    
+# Download photo using URL
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest
 */
 func (a *AlbumApiService) AlbumDownloadByUrlsAlbumDownloadByUrlsPost(ctx context.Context) ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest {
 	return ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []string
+//
+//	@return []string
 func (a *AlbumApiService) AlbumDownloadByUrlsAlbumDownloadByUrlsPostExecute(r ApiAlbumDownloadByUrlsAlbumDownloadByUrlsPostRequest) ([]string, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []string
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []string
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlbumApiService.AlbumDownloadByUrlsAlbumDownloadByUrlsPost")
@@ -300,13 +299,13 @@ func (a *AlbumApiService) AlbumDownloadByUrlsAlbumDownloadByUrlsPostExecute(r Ap
 }
 
 type ApiAlbumUploadAlbumUploadPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *AlbumApiService
-	sessionid *string
-	files *[]*os.File
-	caption *string
-	usertags *[]Usertag
-	location *Location
+	sessionid  *string
+	files      *[]*os.File
+	caption    *string
+	usertags   *[]Usertag
+	location   *Location
 }
 
 func (r ApiAlbumUploadAlbumUploadPostRequest) Sessionid(sessionid string) ApiAlbumUploadAlbumUploadPostRequest {
@@ -341,27 +340,27 @@ func (r ApiAlbumUploadAlbumUploadPostRequest) Execute() (*Media, *http.Response,
 /*
 AlbumUploadAlbumUploadPost Album Upload
 
-Upload album to feed
-    
+# Upload album to feed
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiAlbumUploadAlbumUploadPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiAlbumUploadAlbumUploadPostRequest
 */
 func (a *AlbumApiService) AlbumUploadAlbumUploadPost(ctx context.Context) ApiAlbumUploadAlbumUploadPostRequest {
 	return ApiAlbumUploadAlbumUploadPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return Media
+//
+//	@return Media
 func (a *AlbumApiService) AlbumUploadAlbumUploadPostExecute(r ApiAlbumUploadAlbumUploadPostRequest) (*Media, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *Media
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *Media
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlbumApiService.AlbumUploadAlbumUploadPost")
@@ -403,14 +402,14 @@ func (a *AlbumApiService) AlbumUploadAlbumUploadPostExecute(r ApiAlbumUploadAlbu
 	}
 	localVarFormParams.Add("sessionid", parameterToString(*r.sessionid, ""))
 	var filesLocalVarFormFileName string
-	var filesLocalVarFileName     string
-	var filesLocalVarFileBytes    []byte
+	var filesLocalVarFileName string
+	var filesLocalVarFileBytes []byte
 
 	filesLocalVarFormFileName = "files"
 
 	//filesLocalVarFile := *r.files
 	//if filesLocalVarFile != nil {
-	//	fbs, _ := io.ReadAll(filesLocalVarFile)
+	//	fbs, _ := ioutil.ReadAll(filesLocalVarFile)
 	//	filesLocalVarFileBytes = fbs
 	//	filesLocalVarFileName = filesLocalVarFile.Name()
 	//	filesLocalVarFile.Close()

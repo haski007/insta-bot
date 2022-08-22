@@ -18,16 +18,15 @@ import (
 	"net/url"
 )
 
-
 // MediaApiService MediaApi service
 type MediaApiService service
 
 type ApiMediaArchiveMediaArchivePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
-	revert *bool
+	sessionid  *string
+	mediaId    *string
+	revert     *bool
 }
 
 func (r ApiMediaArchiveMediaArchivePostRequest) Sessionid(sessionid string) ApiMediaArchiveMediaArchivePostRequest {
@@ -52,27 +51,27 @@ func (r ApiMediaArchiveMediaArchivePostRequest) Execute() (bool, *http.Response,
 /*
 MediaArchiveMediaArchivePost Media Archive
 
-Archive a media
-    
+# Archive a media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaArchiveMediaArchivePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaArchiveMediaArchivePostRequest
 */
 func (a *MediaApiService) MediaArchiveMediaArchivePost(ctx context.Context) ApiMediaArchiveMediaArchivePostRequest {
 	return ApiMediaArchiveMediaArchivePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaArchiveMediaArchivePostExecute(r ApiMediaArchiveMediaArchivePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaArchiveMediaArchivePost")
@@ -161,10 +160,10 @@ func (a *MediaApiService) MediaArchiveMediaArchivePostExecute(r ApiMediaArchiveM
 }
 
 type ApiMediaDeleteMediaDeletePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
+	sessionid  *string
+	mediaId    *string
 }
 
 func (r ApiMediaDeleteMediaDeletePostRequest) Sessionid(sessionid string) ApiMediaDeleteMediaDeletePostRequest {
@@ -184,27 +183,27 @@ func (r ApiMediaDeleteMediaDeletePostRequest) Execute() (bool, *http.Response, e
 /*
 MediaDeleteMediaDeletePost Media Delete
 
-Delete media by Media ID
-    
+# Delete media by Media ID
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaDeleteMediaDeletePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaDeleteMediaDeletePostRequest
 */
 func (a *MediaApiService) MediaDeleteMediaDeletePost(ctx context.Context) ApiMediaDeleteMediaDeletePostRequest {
 	return ApiMediaDeleteMediaDeletePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaDeleteMediaDeletePostExecute(r ApiMediaDeleteMediaDeletePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaDeleteMediaDeletePost")
@@ -290,14 +289,14 @@ func (a *MediaApiService) MediaDeleteMediaDeletePostExecute(r ApiMediaDeleteMedi
 }
 
 type ApiMediaEditMediaEditPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
-	caption *string
-	title *string
-	usertags *[]Usertag
-	location *Location
+	sessionid  *string
+	mediaId    *string
+	caption    *string
+	title      *string
+	usertags   *[]Usertag
+	location   *Location
 }
 
 func (r ApiMediaEditMediaEditPostRequest) Sessionid(sessionid string) ApiMediaEditMediaEditPostRequest {
@@ -337,27 +336,27 @@ func (r ApiMediaEditMediaEditPostRequest) Execute() (map[string]interface{}, *ht
 /*
 MediaEditMediaEditPost Media Edit
 
-Edit caption for media
-    
+# Edit caption for media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaEditMediaEditPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaEditMediaEditPostRequest
 */
 func (a *MediaApiService) MediaEditMediaEditPost(ctx context.Context) ApiMediaEditMediaEditPostRequest {
 	return ApiMediaEditMediaEditPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return map[string]interface{}
+//
+//	@return map[string]interface{}
 func (a *MediaApiService) MediaEditMediaEditPostExecute(r ApiMediaEditMediaEditPostRequest) (map[string]interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  map[string]interface{}
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue map[string]interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaEditMediaEditPost")
@@ -460,9 +459,9 @@ func (a *MediaApiService) MediaEditMediaEditPostExecute(r ApiMediaEditMediaEditP
 }
 
 type ApiMediaIdMediaIdGetRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	mediaPk *int32
+	mediaPk    *int32
 }
 
 func (r ApiMediaIdMediaIdGetRequest) MediaPk(mediaPk int32) ApiMediaIdMediaIdGetRequest {
@@ -477,27 +476,27 @@ func (r ApiMediaIdMediaIdGetRequest) Execute() (interface{}, *http.Response, err
 /*
 MediaIdMediaIdGet Media Id
 
-Get full media id
-    
+# Get full media id
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaIdMediaIdGetRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaIdMediaIdGetRequest
 */
 func (a *MediaApiService) MediaIdMediaIdGet(ctx context.Context) ApiMediaIdMediaIdGetRequest {
 	return ApiMediaIdMediaIdGetRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *MediaApiService) MediaIdMediaIdGetExecute(r ApiMediaIdMediaIdGetRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaIdMediaIdGet")
@@ -579,11 +578,11 @@ func (a *MediaApiService) MediaIdMediaIdGetExecute(r ApiMediaIdMediaIdGetRequest
 }
 
 type ApiMediaInfoMediaInfoPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	pk *int32
-	useCache *bool
+	sessionid  *string
+	pk         *int
+	useCache   *bool
 }
 
 func (r ApiMediaInfoMediaInfoPostRequest) Sessionid(sessionid string) ApiMediaInfoMediaInfoPostRequest {
@@ -591,7 +590,7 @@ func (r ApiMediaInfoMediaInfoPostRequest) Sessionid(sessionid string) ApiMediaIn
 	return r
 }
 
-func (r ApiMediaInfoMediaInfoPostRequest) Pk(pk int32) ApiMediaInfoMediaInfoPostRequest {
+func (r ApiMediaInfoMediaInfoPostRequest) Pk(pk int) ApiMediaInfoMediaInfoPostRequest {
 	r.pk = &pk
 	return r
 }
@@ -608,27 +607,27 @@ func (r ApiMediaInfoMediaInfoPostRequest) Execute() (*Media, *http.Response, err
 /*
 MediaInfoMediaInfoPost Media Info
 
-Get media info by pk
-    
+# Get media info by pk
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaInfoMediaInfoPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaInfoMediaInfoPostRequest
 */
 func (a *MediaApiService) MediaInfoMediaInfoPost(ctx context.Context) ApiMediaInfoMediaInfoPostRequest {
 	return ApiMediaInfoMediaInfoPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return Media
+//
+//	@return Media
 func (a *MediaApiService) MediaInfoMediaInfoPostExecute(r ApiMediaInfoMediaInfoPostRequest) (*Media, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *Media
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *Media
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaInfoMediaInfoPost")
@@ -717,11 +716,11 @@ func (a *MediaApiService) MediaInfoMediaInfoPostExecute(r ApiMediaInfoMediaInfoP
 }
 
 type ApiMediaLikeMediaLikePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
-	revert *bool
+	sessionid  *string
+	mediaId    *string
+	revert     *bool
 }
 
 func (r ApiMediaLikeMediaLikePostRequest) Sessionid(sessionid string) ApiMediaLikeMediaLikePostRequest {
@@ -746,27 +745,27 @@ func (r ApiMediaLikeMediaLikePostRequest) Execute() (bool, *http.Response, error
 /*
 MediaLikeMediaLikePost Media Like
 
-Like a media
-    
+# Like a media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaLikeMediaLikePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaLikeMediaLikePostRequest
 */
 func (a *MediaApiService) MediaLikeMediaLikePost(ctx context.Context) ApiMediaLikeMediaLikePostRequest {
 	return ApiMediaLikeMediaLikePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaLikeMediaLikePostExecute(r ApiMediaLikeMediaLikePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaLikeMediaLikePost")
@@ -855,10 +854,10 @@ func (a *MediaApiService) MediaLikeMediaLikePostExecute(r ApiMediaLikeMediaLikeP
 }
 
 type ApiMediaLikersMediaLikersPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
+	sessionid  *string
+	mediaId    *string
 }
 
 func (r ApiMediaLikersMediaLikersPostRequest) Sessionid(sessionid string) ApiMediaLikersMediaLikersPostRequest {
@@ -878,27 +877,27 @@ func (r ApiMediaLikersMediaLikersPostRequest) Execute() ([]UserShort, *http.Resp
 /*
 MediaLikersMediaLikersPost Media Likers
 
-Get user's likers
-    
+# Get user's likers
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaLikersMediaLikersPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaLikersMediaLikersPostRequest
 */
 func (a *MediaApiService) MediaLikersMediaLikersPost(ctx context.Context) ApiMediaLikersMediaLikersPostRequest {
 	return ApiMediaLikersMediaLikersPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []UserShort
+//
+//	@return []UserShort
 func (a *MediaApiService) MediaLikersMediaLikersPostExecute(r ApiMediaLikersMediaLikersPostRequest) ([]UserShort, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []UserShort
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []UserShort
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaLikersMediaLikersPost")
@@ -984,10 +983,10 @@ func (a *MediaApiService) MediaLikersMediaLikersPostExecute(r ApiMediaLikersMedi
 }
 
 type ApiMediaOembedMediaOembedPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	url *string
+	sessionid  *string
+	url        *string
 }
 
 func (r ApiMediaOembedMediaOembedPostRequest) Sessionid(sessionid string) ApiMediaOembedMediaOembedPostRequest {
@@ -1007,27 +1006,27 @@ func (r ApiMediaOembedMediaOembedPostRequest) Execute() (map[string]interface{},
 /*
 MediaOembedMediaOembedPost Media Oembed
 
-Return info about media and user from post URL
-    
+# Return info about media and user from post URL
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaOembedMediaOembedPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaOembedMediaOembedPostRequest
 */
 func (a *MediaApiService) MediaOembedMediaOembedPost(ctx context.Context) ApiMediaOembedMediaOembedPostRequest {
 	return ApiMediaOembedMediaOembedPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return map[string]interface{}
+//
+//	@return map[string]interface{}
 func (a *MediaApiService) MediaOembedMediaOembedPostExecute(r ApiMediaOembedMediaOembedPostRequest) (map[string]interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  map[string]interface{}
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue map[string]interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaOembedMediaOembedPost")
@@ -1113,9 +1112,9 @@ func (a *MediaApiService) MediaOembedMediaOembedPostExecute(r ApiMediaOembedMedi
 }
 
 type ApiMediaPkFromCodeMediaPkFromCodeGetRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	code *string
+	code       *string
 }
 
 func (r ApiMediaPkFromCodeMediaPkFromCodeGetRequest) Code(code string) ApiMediaPkFromCodeMediaPkFromCodeGetRequest {
@@ -1130,27 +1129,27 @@ func (r ApiMediaPkFromCodeMediaPkFromCodeGetRequest) Execute() (interface{}, *ht
 /*
 MediaPkFromCodeMediaPkFromCodeGet Media Pk From Code
 
-Get media pk from code
-    
+# Get media pk from code
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaPkFromCodeMediaPkFromCodeGetRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaPkFromCodeMediaPkFromCodeGetRequest
 */
 func (a *MediaApiService) MediaPkFromCodeMediaPkFromCodeGet(ctx context.Context) ApiMediaPkFromCodeMediaPkFromCodeGetRequest {
 	return ApiMediaPkFromCodeMediaPkFromCodeGetRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *MediaApiService) MediaPkFromCodeMediaPkFromCodeGetExecute(r ApiMediaPkFromCodeMediaPkFromCodeGetRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaPkFromCodeMediaPkFromCodeGet")
@@ -1232,9 +1231,9 @@ func (a *MediaApiService) MediaPkFromCodeMediaPkFromCodeGetExecute(r ApiMediaPkF
 }
 
 type ApiMediaPkFromUrlMediaPkFromUrlGetRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	url *string
+	url        *string
 }
 
 func (r ApiMediaPkFromUrlMediaPkFromUrlGetRequest) Url(url string) ApiMediaPkFromUrlMediaPkFromUrlGetRequest {
@@ -1249,27 +1248,27 @@ func (r ApiMediaPkFromUrlMediaPkFromUrlGetRequest) Execute() (interface{}, *http
 /*
 MediaPkFromUrlMediaPkFromUrlGet Media Pk From Url
 
-Get Media PK from URL
-    
+# Get Media PK from URL
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaPkFromUrlMediaPkFromUrlGetRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaPkFromUrlMediaPkFromUrlGetRequest
 */
 func (a *MediaApiService) MediaPkFromUrlMediaPkFromUrlGet(ctx context.Context) ApiMediaPkFromUrlMediaPkFromUrlGetRequest {
 	return ApiMediaPkFromUrlMediaPkFromUrlGetRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *MediaApiService) MediaPkFromUrlMediaPkFromUrlGetExecute(r ApiMediaPkFromUrlMediaPkFromUrlGetRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaPkFromUrlMediaPkFromUrlGet")
@@ -1351,9 +1350,9 @@ func (a *MediaApiService) MediaPkFromUrlMediaPkFromUrlGetExecute(r ApiMediaPkFro
 }
 
 type ApiMediaPkMediaPkGetRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	mediaId *string
+	mediaId    *string
 }
 
 func (r ApiMediaPkMediaPkGetRequest) MediaId(mediaId string) ApiMediaPkMediaPkGetRequest {
@@ -1368,27 +1367,27 @@ func (r ApiMediaPkMediaPkGetRequest) Execute() (interface{}, *http.Response, err
 /*
 MediaPkMediaPkGet Media Pk
 
-Get short media id
-    
+# Get short media id
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaPkMediaPkGetRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaPkMediaPkGetRequest
 */
 func (a *MediaApiService) MediaPkMediaPkGet(ctx context.Context) ApiMediaPkMediaPkGetRequest {
 	return ApiMediaPkMediaPkGetRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return interface{}
+//
+//	@return interface{}
 func (a *MediaApiService) MediaPkMediaPkGetExecute(r ApiMediaPkMediaPkGetRequest) (interface{}, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  interface{}
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue interface{}
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaPkMediaPkGet")
@@ -1470,10 +1469,10 @@ func (a *MediaApiService) MediaPkMediaPkGetExecute(r ApiMediaPkMediaPkGetRequest
 }
 
 type ApiMediaSeenMediaSeenPostRequest struct {
-	ctx context.Context
-	ApiService *MediaApiService
-	sessionid *string
-	mediaIds *[]string
+	ctx             context.Context
+	ApiService      *MediaApiService
+	sessionid       *string
+	mediaIds        *[]string
 	skippedMediaIds *[]string
 }
 
@@ -1499,27 +1498,27 @@ func (r ApiMediaSeenMediaSeenPostRequest) Execute() (bool, *http.Response, error
 /*
 MediaSeenMediaSeenPost Media Seen
 
-Mark a media as seen
-    
+# Mark a media as seen
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaSeenMediaSeenPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaSeenMediaSeenPostRequest
 */
 func (a *MediaApiService) MediaSeenMediaSeenPost(ctx context.Context) ApiMediaSeenMediaSeenPostRequest {
 	return ApiMediaSeenMediaSeenPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaSeenMediaSeenPostExecute(r ApiMediaSeenMediaSeenPostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaSeenMediaSeenPost")
@@ -1608,10 +1607,10 @@ func (a *MediaApiService) MediaSeenMediaSeenPostExecute(r ApiMediaSeenMediaSeenP
 }
 
 type ApiMediaUnarchiveMediaUnarchivePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
+	sessionid  *string
+	mediaId    *string
 }
 
 func (r ApiMediaUnarchiveMediaUnarchivePostRequest) Sessionid(sessionid string) ApiMediaUnarchiveMediaUnarchivePostRequest {
@@ -1631,27 +1630,27 @@ func (r ApiMediaUnarchiveMediaUnarchivePostRequest) Execute() (bool, *http.Respo
 /*
 MediaUnarchiveMediaUnarchivePost Media Unarchive
 
-Unarchive a media
-    
+# Unarchive a media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaUnarchiveMediaUnarchivePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaUnarchiveMediaUnarchivePostRequest
 */
 func (a *MediaApiService) MediaUnarchiveMediaUnarchivePost(ctx context.Context) ApiMediaUnarchiveMediaUnarchivePostRequest {
 	return ApiMediaUnarchiveMediaUnarchivePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaUnarchiveMediaUnarchivePostExecute(r ApiMediaUnarchiveMediaUnarchivePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaUnarchiveMediaUnarchivePost")
@@ -1737,10 +1736,10 @@ func (a *MediaApiService) MediaUnarchiveMediaUnarchivePostExecute(r ApiMediaUnar
 }
 
 type ApiMediaUnlikeMediaUnlikePostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaId *string
+	sessionid  *string
+	mediaId    *string
 }
 
 func (r ApiMediaUnlikeMediaUnlikePostRequest) Sessionid(sessionid string) ApiMediaUnlikeMediaUnlikePostRequest {
@@ -1760,27 +1759,27 @@ func (r ApiMediaUnlikeMediaUnlikePostRequest) Execute() (bool, *http.Response, e
 /*
 MediaUnlikeMediaUnlikePost Media Unlike
 
-Unlike a media
-    
+# Unlike a media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaUnlikeMediaUnlikePostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaUnlikeMediaUnlikePostRequest
 */
 func (a *MediaApiService) MediaUnlikeMediaUnlikePost(ctx context.Context) ApiMediaUnlikeMediaUnlikePostRequest {
 	return ApiMediaUnlikeMediaUnlikePostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return bool
+//
+//	@return bool
 func (a *MediaApiService) MediaUnlikeMediaUnlikePostExecute(r ApiMediaUnlikeMediaUnlikePostRequest) (bool, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  bool
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue bool
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaUnlikeMediaUnlikePost")
@@ -1866,10 +1865,10 @@ func (a *MediaApiService) MediaUnlikeMediaUnlikePostExecute(r ApiMediaUnlikeMedi
 }
 
 type ApiMediaUserMediaUserPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	mediaPk *int32
+	sessionid  *string
+	mediaPk    *int32
 }
 
 func (r ApiMediaUserMediaUserPostRequest) Sessionid(sessionid string) ApiMediaUserMediaUserPostRequest {
@@ -1889,27 +1888,27 @@ func (r ApiMediaUserMediaUserPostRequest) Execute() (*UserShort, *http.Response,
 /*
 MediaUserMediaUserPost Media User
 
-Get author of the media
-    
+# Get author of the media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiMediaUserMediaUserPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiMediaUserMediaUserPostRequest
 */
 func (a *MediaApiService) MediaUserMediaUserPost(ctx context.Context) ApiMediaUserMediaUserPostRequest {
 	return ApiMediaUserMediaUserPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return UserShort
+//
+//	@return UserShort
 func (a *MediaApiService) MediaUserMediaUserPostExecute(r ApiMediaUserMediaUserPostRequest) (*UserShort, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *UserShort
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *UserShort
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.MediaUserMediaUserPost")
@@ -1995,11 +1994,11 @@ func (a *MediaApiService) MediaUserMediaUserPostExecute(r ApiMediaUserMediaUserP
 }
 
 type ApiUserMediasMediaUserMediasPostRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *MediaApiService
-	sessionid *string
-	userId *int32
-	amount *int32
+	sessionid  *string
+	userId     *int32
+	amount     *int32
 }
 
 func (r ApiUserMediasMediaUserMediasPostRequest) Sessionid(sessionid string) ApiUserMediasMediaUserMediasPostRequest {
@@ -2024,27 +2023,27 @@ func (r ApiUserMediasMediaUserMediasPostRequest) Execute() ([]Media, *http.Respo
 /*
 UserMediasMediaUserMediasPost User Medias
 
-Get a user's media
-    
+# Get a user's media
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiUserMediasMediaUserMediasPostRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiUserMediasMediaUserMediasPostRequest
 */
 func (a *MediaApiService) UserMediasMediaUserMediasPost(ctx context.Context) ApiUserMediasMediaUserMediasPostRequest {
 	return ApiUserMediasMediaUserMediasPostRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []Media
+//
+//	@return []Media
 func (a *MediaApiService) UserMediasMediaUserMediasPostExecute(r ApiUserMediasMediaUserMediasPostRequest) ([]Media, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []Media
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []Media
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "MediaApiService.UserMediasMediaUserMediasPost")
