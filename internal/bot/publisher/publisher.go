@@ -26,7 +26,6 @@ func New(cli *instapi.APIClient, username, password, verificationCode string) bo
 	return &Publisher{
 		apiCli: cli,
 		// TODO: make empty after debug
-		authToken:        "54655610031%3A8ss25xkfZkRCmz%3A7%3AAYeZBJ5RbWTpmlGcA5kHYvoDK-cOMoczMnCEpWCRTw",
 		username:         username,
 		password:         password,
 		verificationCode: verificationCode,
