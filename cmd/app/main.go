@@ -48,9 +48,10 @@ func flags() []cli.Flag {
 			EnvVars: []string{"METRICS_SERVER_ADDR"},
 		},
 		&cli.StringFlag{
-			Name:    "config",
-			Aliases: []string{"c"},
-			EnvVars: []string{"CONFIG_PATH"},
+			Name:     "config",
+			Aliases:  []string{"c"},
+			Required: true,
+			EnvVars:  []string{"CONFIG_PATH"},
 		},
 	}
 }
