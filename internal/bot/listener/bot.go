@@ -5,15 +5,17 @@ import (
 	"fmt"
 
 	"github.com/haski007/insta-bot/internal/bot"
+	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type InstaBotService struct {
-	bot     *tgbotapi.BotAPI
-	instapi bot.InstApi
-	updates tgbotapi.UpdatesChannel
+	bot       *tgbotapi.BotAPI
+	tiktokApi *tiktokapi.TikTokClient
+	instapi   bot.InstApi
+	updates   tgbotapi.UpdatesChannel
 
 	creatorID         int64
 	captionCharsLimit int
@@ -29,6 +31,7 @@ func NewInstaBotService(
 	creatorID int64,
 	updatesChan tgbotapi.UpdatesChannel,
 	captionCharsLimit int,
+	tiktokApi *tiktokapi.TikTokClient,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -37,6 +40,7 @@ func NewInstaBotService(
 		instapi:           instapi,
 		ctx:               ctx,
 		captionCharsLimit: captionCharsLimit,
+		tiktokApi:         tiktokApi,
 	}
 }
 

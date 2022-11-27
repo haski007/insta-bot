@@ -3,5 +3,6 @@ vendor/
 .vscode
 .DS_Store
 /build/app
+/build/insta-bot
 
 config/local.yaml

@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
-
-	"github.com/haski007/insta-bot/internal/bot/listener"
+	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -55,7 +55,8 @@ func Run(ctx context.Context, args run.Args) error {
 	apiCli := publisher.New(
 		instapiCli,
 		cfg.Clients.Instapi.Username,
-		cfg.Clients.Instapi.Password)
+		cfg.Clients.Instapi.Password,
+		cfg.Clients.Instapi.VerificationCode)
 
 	// TODO: uncomment after debug
 	//if err := apiCli.Login(ctx); err != nil {
@@ -69,6 +70,7 @@ func Run(ctx context.Context, args run.Args) error {
 		cfg.TelegramBot.CreatorUserID,
 		chUpdates,
 		cfg.CaptionCharsLimit,
+		tiktokapi.New(),
 	).SetLogger(log)
 
 	if err := tgbotapi.SetLogger(log); err != nil {

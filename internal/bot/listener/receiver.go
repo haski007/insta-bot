@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/pkg/emoji"
 	"github.com/sirupsen/logrus"
 )
@@ -53,11 +54,18 @@ func (rcv *InstaBotService) StartPool() error {
 
 		// Parse messages
 		if update.Message != nil {
-			if strings.Contains(update.Message.Text, "https://www.instagram.com/") {
+			switch {
+			case strings.Contains(update.Message.Text, "https://www.instagram.com/"):
 				go rcv.msgMediaTrigger(update)
-			} else if strings.Contains(update.Message.Text, "https://instagram.com/stories") {
+			case strings.Contains(update.Message.Text, "https://instagram.com/stories"):
 				go rcv.msgStoriesTrigger(update)
+
+			case strings.Contains(update.Message.Text, publisher.TikTokBaseUrl) ||
+				strings.Contains(update.Message.Text, publisher.TikTokShareBaseUrl):
+				go rcv.msgTikTokTrigger(update)
+
 			}
+
 		}
 	}
 
