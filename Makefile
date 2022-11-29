@@ -36,6 +36,16 @@ build:
 			-ldflags "-X main.Version=$(APP_VERSION)" \
 			$(CMD_PATH)*.go
 
+build-linux:
+	CGO_ENABLED=0 \
+	GOOS=linux \
+	GOARCH=amd64 \
+		$(GOBUILD) \
+			-installsuffix cgo \
+			-o $(BINARY_PATH)$(BINARY_NAME).linux \
+			-ldflags "-X main.Version=$(APP_VERSION)" \
+			$(CMD_PATH)*.go
+
 
 
 

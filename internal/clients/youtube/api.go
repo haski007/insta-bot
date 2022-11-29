@@ -61,11 +61,6 @@ func (rcv *Client) GetVideoByUrl(url string, qualityLimit int) (*model.Video, er
 	var downloadUrl string
 	if result.URL != "" {
 		downloadUrl = result.URL
-	} else {
-		arr := strings.Split(result.Cipher, "url=")
-		if len(arr) >= 2 {
-			downloadUrl = arr[1]
-		}
 	}
 
 	if downloadUrl == "" {

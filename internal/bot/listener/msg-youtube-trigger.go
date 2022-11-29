@@ -27,12 +27,19 @@ func (rcv *InstaBotService) msgYoutubeTrigger(update tgbotapi.Update) {
 		return
 	}
 
-	fileName := videoData.Author + strconv.FormatInt(time.Now().UnixNano(), 10)
+	if videoData.GetDownloadUrl() == "" {
+		rcv.SendError(chatID, ErrInternalServerError)
+		rcv.log.WithError(err).Error("[msgYoutubeTrigger] get video by url")
+	} else {
+		fmt.Println(videoData.GetDownloadUrl())
+	}
 
+	fileName := videoData.Author + strconv.FormatInt(time.Now().UnixNano(), 10) + ".mp4"
 	rcv.log.WithFields(map[string]interface{}{
 		"from":        update.Message.From.UserName,
 		"chat":        update.Message.Chat.Title,
 		"video_title": videoData.Title,
+		"filename":    fileName,
 	}).Debugln("downloading video...")
 	videoPath, err := videoData.DownloadAsFile(os.TempDir(), fileName)
 	if err != nil {
