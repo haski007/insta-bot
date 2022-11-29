@@ -39,6 +39,8 @@ func (rcv *InstaBotService) StartPool() error {
 			switch {
 			case command == "test":
 				go rcv.cmdTestHandler(update)
+			case command == "set_quality":
+				go rcv.cmdSetQualityHandler(update)
 
 			default:
 				go func() {
@@ -63,6 +65,9 @@ func (rcv *InstaBotService) StartPool() error {
 			case strings.Contains(update.Message.Text, publisher.TikTokBaseUrl) ||
 				strings.Contains(update.Message.Text, publisher.TikTokShareBaseUrl):
 				go rcv.msgTikTokTrigger(update)
+
+			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
+				go rcv.msgYoutubeTrigger(update)
 
 			}
 
