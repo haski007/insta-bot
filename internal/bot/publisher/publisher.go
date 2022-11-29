@@ -11,6 +11,9 @@ const (
 
 	TikTokBaseUrl      = "https://www.tiktok.com/"
 	TikTokShareBaseUrl = "https://vm.tiktok.com/"
+
+	YoutubeBaseUrl      = "https://www.youtube.com"
+	YoutubeVideoBaseUrl = "https://www.youtube.com/watch"
 )
 
 type Publisher struct {

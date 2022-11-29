@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/haski007/insta-bot/internal/clients/youtube"
+
 	"github.com/haski007/insta-bot/internal/bot"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/sirupsen/logrus"
@@ -12,10 +14,11 @@ import (
 )
 
 type InstaBotService struct {
-	bot       *tgbotapi.BotAPI
-	tiktokApi *tiktokapi.TikTokClient
-	instapi   bot.InstApi
-	updates   tgbotapi.UpdatesChannel
+	bot        *tgbotapi.BotAPI
+	tiktokApi  *tiktokapi.TikTokClient
+	youtubeApi *youtube.Client
+	instapi    bot.InstApi
+	updates    tgbotapi.UpdatesChannel
 
 	creatorID         int64
 	captionCharsLimit int
@@ -32,6 +35,7 @@ func NewInstaBotService(
 	updatesChan tgbotapi.UpdatesChannel,
 	captionCharsLimit int,
 	tiktokApi *tiktokapi.TikTokClient,
+	youtubeApi *youtube.Client,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -41,6 +45,7 @@ func NewInstaBotService(
 		ctx:               ctx,
 		captionCharsLimit: captionCharsLimit,
 		tiktokApi:         tiktokApi,
+		youtubeApi:        youtubeApi,
 	}
 }
 

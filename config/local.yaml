@@ -3,6 +3,8 @@ clients:
     addr: "localhost:1234"
     username: "haskistest"
     password: "Haski12345"
+  youtube_api:
+    max_quality: 1080
 telegram_bot:
   token: "1273082145:AAGJr0p-9hMC8U2ffweI3GK0pJTdmIH_o-o"
   creator_user_id: 370649141

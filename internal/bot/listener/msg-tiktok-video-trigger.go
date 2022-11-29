@@ -38,7 +38,7 @@ func (rcv *InstaBotService) msgTikTokTrigger(update tgbotapi.Update) {
 		return
 	}
 
-	fileBytes, err := getTikTokFileBytes(videoPath, fileName)
+	fileBytes, err := getVideoFileBytes(videoPath, fileName)
 	if err != nil {
 		rcv.SendError(chatID, ErrInternalServerError)
 		if errC := rcv.NotifyCreator(fmt.Sprintf("[msgTikTokTrigger] can't get file bytes videoPath: %s\n"+
@@ -72,7 +72,7 @@ func (rcv *InstaBotService) msgTikTokTrigger(update tgbotapi.Update) {
 		rcv.log.WithError(err).Error("[msgTikTokTrigger] delete message")
 	}
 }
-func getTikTokFileBytes(filepath, name string) (tgbotapi.FileBytes, error) {
+func getVideoFileBytes(filepath, name string) (tgbotapi.FileBytes, error) {
 	defer file.DeleteFile(filepath)
 	photoBytes, err := os.ReadFile(filepath)
 	if err != nil {

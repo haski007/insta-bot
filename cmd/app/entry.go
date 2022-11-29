@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/haski007/insta-bot/internal/clients/youtube"
+
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
@@ -71,6 +73,7 @@ func Run(ctx context.Context, args run.Args) error {
 		chUpdates,
 		cfg.CaptionCharsLimit,
 		tiktokapi.New(),
+		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
 	).SetLogger(log)
 
 	if err := tgbotapi.SetLogger(log); err != nil {

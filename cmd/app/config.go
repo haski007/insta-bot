@@ -10,11 +10,16 @@ import (
 
 type Config struct {
 	Clients struct {
-		Instapi factory.HTTPClient `yaml:"instapi"`
+		Instapi    factory.HTTPClient `yaml:"instapi"`
+		YoutubeApi YouTubeConfig      `yaml:"youtube_api"`
 	}
 	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
 
 	CaptionCharsLimit int `yaml:"caption_chars_limit"`
+}
+
+type YouTubeConfig struct {
+	MaxQuality int `yaml:"max_quality"`
 }
 
 func Load(configFile string, cfg interface{}) error {

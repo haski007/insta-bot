@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/haski007/insta-bot/pkg/text"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/haski007/insta-bot/internal/bot"
 	"github.com/haski007/insta-bot/internal/bot/model"
@@ -53,9 +55,7 @@ func (rcv *TikTokClient) GetVideoDataFromUrl(url string) (bot.TikTokVideo, error
 		return nil, fmt.Errorf("download url not found in gey response")
 	}
 
-	downloadUrl := strings.ReplaceAll(arr[1], "\\u002F", "/")
-	downloadUrl = strings.ReplaceAll(downloadUrl, "%7C", "|")
-	downloadUrl = strings.ReplaceAll(downloadUrl, "%3D", "=")
+	downloadUrl := text.DecodeUrl(arr[1])
 
 	authorArr := regexp.MustCompile(`"author"\s*:\s*"(.*?)",`).FindStringSubmatch(string(rspData))
 
@@ -66,7 +66,7 @@ func (rcv *TikTokClient) GetVideoDataFromUrl(url string) (bot.TikTokVideo, error
 		}
 	}
 
-	return &model.TikTokVideo{
+	return &model.Video{
 		Title:        title,
 		DownloadUrl:  downloadUrl,
 		Author:       author,
