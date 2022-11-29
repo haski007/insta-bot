@@ -1,1 +1,1 @@
-web: make build && ./build/insta-bot -config config/local.yaml -log_level "DEBUG"
+web: ./build/insta-bot -config config/local.yaml -log_level "DEBUG"
