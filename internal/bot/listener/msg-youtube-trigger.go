@@ -30,8 +30,6 @@ func (rcv *InstaBotService) msgYoutubeTrigger(update tgbotapi.Update) {
 	if videoData.GetDownloadUrl() == "" {
 		rcv.SendError(chatID, ErrInternalServerError)
 		rcv.log.WithError(err).Error("[msgYoutubeTrigger] get video by url")
-	} else {
-		fmt.Println(videoData.GetDownloadUrl())
 	}
 
 	fileName := videoData.Author + strconv.FormatInt(time.Now().UnixNano(), 10) + ".mp4"
