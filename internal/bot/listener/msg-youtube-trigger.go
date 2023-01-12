@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/haski007/insta-bot/pkg/text"
+	"mvdan.cc/xurls/v2"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -14,6 +15,13 @@ import (
 func (rcv *InstaBotService) msgYoutubeTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
+
+	xurlsStrict := xurls.Strict()
+	output := xurlsStrict.FindAllString(update.Message.Text, -1)
+	if len(output) < 1 {
+		rcv.SendError(chatID, "invalid url in message")
+		return
+	}
 	url := update.Message.Text
 
 	rcv.log.WithFields(map[string]interface{}{

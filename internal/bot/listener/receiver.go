@@ -14,11 +14,10 @@ func (rcv *InstaBotService) StartPool() error {
 	if err != nil {
 		_ = rcv.NotifyCreator(fmt.Sprintf("[bot GetMe] err: %s", err))
 		return err
-
 	}
 
 	for update := range rcv.updates {
-		if update.EditedMessage != nil {
+		if update.EditedMessage != nil || update.Poll != nil || update.PollAnswer != nil {
 			continue
 		}
 
@@ -34,13 +33,26 @@ func (rcv *InstaBotService) StartPool() error {
 		}
 
 		// ---> Commands
-		if update.Message.IsCommand() {
-			command := update.Message.CommandWithAt()
+		if update.Message != nil && update.Message.IsCommand() {
+			command := update.Message.Command()
 			switch {
 			case command == "test":
 				go rcv.cmdTestHandler(update)
+			case command == "help":
+				go rcv.cmdStartHandler(update)
+
 			case command == "set_quality":
 				go rcv.cmdSetQualityHandler(update)
+
+			// CSGO addon ^)
+			case command == "reg_csgo_players":
+				go rcv.cmdRegCSGOPlayersHandler(update)
+			case command == "purge_csgo_players":
+				go rcv.cmdPurgeCSGOPlayersHandler(update)
+			case command == "list_players":
+				go rcv.cmdListPlayersHandler(update)
+			case command == "lets_play":
+				go rcv.cmdLetsPlayHandler(update)
 
 			default:
 				go func() {
@@ -55,7 +67,7 @@ func (rcv *InstaBotService) StartPool() error {
 		}
 
 		// Parse messages
-		if update.Message != nil {
+		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, "https://www.instagram.com/"):
 				go rcv.msgMediaTrigger(update)
@@ -68,7 +80,6 @@ func (rcv *InstaBotService) StartPool() error {
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
 				go rcv.msgYoutubeTrigger(update)
-
 			}
 
 		}

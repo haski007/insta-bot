@@ -8,7 +8,6 @@ import (
 
 func (rcv *InstaBotService) SendError(chatID int64, msg string) error {
 	answer := tgbotapi.NewMessage(chatID, emoji.Warning+msg+emoji.Warning)
-	answer.ParseMode = tgbotapi.ModeMarkdown
 
 	if _, errN := rcv.bot.Send(answer); errN != nil {
 		return errN

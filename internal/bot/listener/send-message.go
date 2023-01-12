@@ -16,3 +16,13 @@ func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string
 	_, err := rcv.bot.Send(message)
 	return err
 }
+
+func (rcv *InstaBotService) CreatePoll(
+	chatID int64, caption string, isAnon bool,
+	options ...string,
+) error {
+	answer := tgbotapi.NewPoll(chatID, caption, options...)
+	answer.IsAnonymous = isAnon
+	_, err := rcv.bot.Send(answer)
+	return err
+}

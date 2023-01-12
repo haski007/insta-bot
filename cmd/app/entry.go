@@ -8,12 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/haski007/insta-bot/internal/clients/youtube"
-
+	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
+	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,6 +21,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	redisWrapper "github.com/haski007/insta-bot/internal/storage/redis"
 )
 
 func Run(ctx context.Context, args run.Args) error {
@@ -65,6 +66,17 @@ func Run(ctx context.Context, args run.Args) error {
 	//	return fmt.Errorf("instapi entry login err: %w", err)
 	//}
 
+	redCC := redis.NewClient(&redis.Options{
+		Addr: cfg.Clients.Redis.Addr,
+	})
+	defer redCC.Close()
+
+	redisStorage, err := redisWrapper.NewClient(redCC)
+	if err != nil {
+		return fmt.Errorf("connect to redis err: %w", err)
+
+	}
+
 	botSrv := listener.NewInstaBotService(
 		ctx,
 		botApi,
@@ -74,6 +86,7 @@ func Run(ctx context.Context, args run.Args) error {
 		cfg.CaptionCharsLimit,
 		tiktokapi.New(),
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
+		redisStorage,
 	).SetLogger(log)
 
 	if err := tgbotapi.SetLogger(log); err != nil {

@@ -1,0 +1,19 @@
+version: "3"
+services:
+  bot:
+    image: insta-bot
+    build:
+      context: .
+      dockerfile: docker/bot.Dockerfile
+    restart: on-failure
+    environment:
+      - LOG_LEVEL=DEBUG
+    ports:
+      - 8010:8010
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
