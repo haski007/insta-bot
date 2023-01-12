@@ -29,9 +29,7 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	mediaInfo, err := rcv.instapi.GetMediaInfoFromURL(rcv.ctx, url)
 	if err != nil {
 		rcv.log.WithError(err).Println("[msgMediaTrigger] GetMediaInfoFromURL")
-		if err := rcv.SendError(chatID, fmt.Sprintf("can't get media from url [%s]", url)); err != nil {
-			rcv.log.WithError(err).Println("[msgMediaTrigger] send error")
-		}
+		rcv.SendError(chatID, fmt.Sprintf("can't get media from url [%s]", url))
 		return
 	}
 	var downloadedFiles []interface{}
@@ -78,7 +76,7 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	case publisher.Album:
 		downloaded, err := downloadResources(mediaInfo)
 		if err != nil {
-			if errors.As(err, bot.ErrWrongFileFormat) {
+			if errors.Is(err, bot.ErrWrongFileFormat) {
 				rcv.SendError(chatID, "wrong file format, or not supported yet, write please to creator: @pdemian")
 			}
 			rcv.log.WithError(err).
@@ -177,7 +175,7 @@ func downloadResource(url string, name string, mediaType publisher.MediaType) (i
 func getFileBytes(filepath, name string) (tgbotapi.FileBytes, error) {
 	photoBytes, err := os.ReadFile(filepath)
 	if err != nil {
-		return tgbotapi.FileBytes{}, fmt.Errorf("read file err: %w")
+		return tgbotapi.FileBytes{}, fmt.Errorf("read file err: %w", err)
 	}
 	photoFileBytes := tgbotapi.FileBytes{
 		Name:  name,

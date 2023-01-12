@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/pkg/file"
+
+	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/pkg/text"
 	"mvdan.cc/xurls/v2"
 
@@ -82,13 +83,15 @@ func (rcv *InstaBotService) msgTikTokTrigger(update tgbotapi.Update) {
 		rcv.log.WithError(err).Error("[msgTikTokTrigger] delete message")
 	}
 }
-func getVideoFileBytes(filepath, name string) (tgbotapi.FileBytes, error) {
-	defer file.DeleteFile(filepath)
+func getVideoFileBytes(filepath, name string) (photoFileBytes tgbotapi.FileBytes, err error) {
+	defer func() {
+		err = file.DeleteFile(filepath)
+	}()
 	photoBytes, err := os.ReadFile(filepath)
 	if err != nil {
-		return tgbotapi.FileBytes{}, fmt.Errorf("read file err: %w")
+		return tgbotapi.FileBytes{}, fmt.Errorf("read file err: %w", err)
 	}
-	photoFileBytes := tgbotapi.FileBytes{
+	photoFileBytes = tgbotapi.FileBytes{
 		Name:  name,
 		Bytes: photoBytes,
 	}

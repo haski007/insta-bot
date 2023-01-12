@@ -1,8 +1,6 @@
 package listener
 
 import (
-	"fmt"
-
 	"github.com/haski007/insta-bot/pkg/emoji"
 	"github.com/sirupsen/logrus"
 
@@ -18,7 +16,7 @@ func (rcv *InstaBotService) cmdPurgeCSGOPlayersHandler(update tgbotapi.Update) {
 		return
 	}
 
-	message := fmt.Sprintf("Successfully deleted stopped to listen cs go triggers ")
+	message := "Successfully deleted stopped to listen cs go triggers "
 	if err := rcv.SendMessage(chatID, message+emoji.Basket); err != nil {
 		logrus.WithError(err).Println("[cmdPurgeCSGOPlayersHandler] send message to chat")
 	}

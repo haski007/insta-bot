@@ -60,7 +60,7 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 	} else {
 		message += "\nХто буде в коунтер стріке? Галасуєм!"
 	}
-	strings.ReplaceAll(message, "_", "\\_")
+	message = strings.ReplaceAll(message, "_", "\\_")
 
 	if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
 		logrus.WithError(err).Println("[cmdLetsPlayHandler] send message to chat")
