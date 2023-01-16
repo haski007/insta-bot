@@ -44,15 +44,25 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "set_quality":
 				go rcv.cmdSetQualityHandler(update)
 
+			case command == "list_players":
+				go rcv.cmdListPlayersHandler(update)
+
 			// CSGO addon ^)
 			case command == "reg_csgo_players":
 				go rcv.cmdRegCSGOPlayersHandler(update)
 			case command == "purge_csgo_players":
 				go rcv.cmdPurgeCSGOPlayersHandler(update)
-			case command == "list_players":
-				go rcv.cmdListPlayersHandler(update)
+
 			case command == "lets_play":
 				go rcv.cmdLetsPlayHandler(update)
+
+			// CSGO addon ^)
+			case command == "reg_pubg_players":
+				go rcv.cmdRegPUBGPlayersHandler(update)
+			case command == "purge_pubg_players":
+				go rcv.cmdPurgePUBGPlayersHandler(update)
+			case command == "lets_play_pubg":
+				go rcv.cmdLetsPlayPUBGHandler(update)
 
 			default:
 				go func() {

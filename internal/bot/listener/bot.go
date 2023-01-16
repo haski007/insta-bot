@@ -15,6 +15,7 @@ import (
 
 const (
 	CSGOContext = "csgo"
+	PUBGContext = "pubg"
 )
 
 type InstaBotService struct {
