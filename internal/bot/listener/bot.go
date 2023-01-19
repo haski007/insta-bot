@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/haski007/insta-bot/internal/bot"
+	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/internal/storage"
@@ -23,6 +24,7 @@ type InstaBotService struct {
 	tiktokApi  *tiktokapi.TikTokClient
 	youtubeApi *youtube.Client
 	instapi    bot.InstApi
+	calendar   google.Calendar
 	updates    tgbotapi.UpdatesChannel
 	storage    storage.Storage
 
@@ -43,6 +45,7 @@ func NewInstaBotService(
 	tiktokApi *tiktokapi.TikTokClient,
 	youtubeApi *youtube.Client,
 	storage storage.Storage,
+	calendarSrv google.Calendar,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -54,6 +57,7 @@ func NewInstaBotService(
 		tiktokApi:         tiktokApi,
 		youtubeApi:        youtubeApi,
 		storage:           storage,
+		calendar:          calendarSrv,
 	}
 }
 

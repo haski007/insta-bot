@@ -1,10 +1,12 @@
 package listener
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -15,12 +17,24 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 
 	args := strings.Fields(update.Message.CommandArguments())
 
-	var timeToPlay string
+	var (
+		timeToPlay    string
+		suggestedTime time.Time
+		err           error
+	)
 	if len(args) != 0 {
-		_, err := time.Parse("15:04", args[0])
+		suggestedTime, err = time.Parse("15:04", args[0])
 		if err == nil {
 			timeToPlay = args[0]
 		}
+		suggestedTime = time.Date(time.Now().Year(),
+			time.Now().Month(),
+			time.Now().Day(),
+			suggestedTime.Hour(),
+			suggestedTime.Minute(),
+			suggestedTime.Second(),
+			suggestedTime.Nanosecond(),
+			time.Now().Location())
 	}
 
 	// ---> Check if chat is registered not to spam in usual chats
@@ -57,6 +71,24 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 	if timeToPlay != "" {
 		voteCaption = fmt.Sprintf("%s CS GO в %s?", voteCaption, timeToPlay)
 		message += fmt.Sprintf("\nХто буде в коунтер стріке в %s? Галасуєм!", timeToPlay)
+
+		rsp, err := rcv.calendar.CreateMeet(context.Background(), &google.CreateMeetReq{
+			Summary:     "Very important meeting",
+			Location:    "Forsage dance club",
+			Description: "Here we gonna make some magic and win all the enemies!",
+			CalendarID:  "primary",
+			Guests:      nil,
+			StartTime:   suggestedTime,
+			EndTime:     suggestedTime.Add(time.Hour),
+		})
+		if err != nil {
+			rcv.NotifyCreator(fmt.Sprintf("can't create google meet err: %s", err))
+			rcv.log.WithError(err).Println("create google meet")
+		}
+
+		time.AfterFunc(suggestedTime.Sub(time.Now()), func() {
+			rcv.SendMessage(chatID, "Here we go guys! "+rsp.MeetLink)
+		})
 	} else {
 		message += "\nХто буде в коунтер стріке? Галасуєм!"
 	}

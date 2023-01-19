@@ -5,4 +5,7 @@ vendor/
 /build/app
 /build/insta-bot
 
+.*
+*.json
+
 config/local.yaml

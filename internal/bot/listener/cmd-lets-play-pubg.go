@@ -55,7 +55,7 @@ func (rcv *InstaBotService) cmdLetsPlayPUBGHandler(update tgbotapi.Update) {
 	var voteCaption = "Галасаваніє!"
 
 	if timeToPlay != "" {
-		voteCaption = fmt.Sprintf("%s CS GO в %s?", voteCaption, timeToPlay)
+		voteCaption = fmt.Sprintf("%s PUBG в %s?", voteCaption, timeToPlay)
 		message += fmt.Sprintf("\nХто буде в PUBG в %s? Галасуєм!", timeToPlay)
 	} else {
 		message += "\nХто буде в PUBG? Галасуєм!"
