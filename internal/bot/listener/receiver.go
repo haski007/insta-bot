@@ -17,7 +17,13 @@ func (rcv *InstaBotService) StartPool() error {
 	}
 
 	for update := range rcv.updates {
-		if update.EditedMessage != nil || update.Poll != nil || update.PollAnswer != nil {
+		if update.EditedMessage != nil || update.Poll != nil {
+			continue
+		}
+
+		if update.PollAnswer != nil {
+			rcv.log.Println("here")
+			go rcv.triggerPollAnswer(update)
 			continue
 		}
 
@@ -63,6 +69,10 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.cmdPurgePUBGPlayersHandler(update)
 			case command == "lets_play_pubg":
 				go rcv.cmdLetsPlayPUBGHandler(update)
+
+			// Users
+			case command == "set_email":
+				go rcv.cmdSetEmailHandler(update)
 
 			default:
 				go func() {

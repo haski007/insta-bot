@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/haski007/insta-bot/internal/storage"
+
 	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/sirupsen/logrus"
 
@@ -34,7 +36,7 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 			suggestedTime.Minute(),
 			suggestedTime.Second(),
 			suggestedTime.Nanosecond(),
-			time.Now().Location())
+			time.Now().Location()).Add(time.Hour * -1)
 	}
 
 	// ---> Check if chat is registered not to spam in usual chats
@@ -67,6 +69,7 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 	}
 
 	var voteCaption = "Галасаваніє!"
+	var meetLink, eventID string
 
 	if timeToPlay != "" {
 		voteCaption = fmt.Sprintf("%s CS GO в %s?", voteCaption, timeToPlay)
@@ -85,10 +88,8 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 			rcv.NotifyCreator(fmt.Sprintf("can't create google meet err: %s", err))
 			rcv.log.WithError(err).Println("create google meet")
 		}
-
-		time.AfterFunc(suggestedTime.Sub(time.Now()), func() {
-			rcv.SendMessage(chatID, "Here we go guys! "+rsp.MeetLink)
-		})
+		meetLink = rsp.MeetLink
+		eventID = rsp.EventID
 	} else {
 		message += "\nХто буде в коунтер стріке? Галасуєм!"
 	}
@@ -102,7 +103,26 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 		"(-) Нііі, ні я не ту кохав, не ті слова..., в общем лох я!",
 	}
 
-	if err := rcv.CreatePoll(chatID, voteCaption, false, options...); err != nil {
+	pollRsp, err := rcv.CreatePoll(chatID, voteCaption, false, options...)
+	if err != nil {
 		logrus.WithError(err).Println("[cmdLetsPlayHandler] create poll to chat")
 	}
+
+	if meetLink != "" {
+		if err := rcv.storage.PollInit(storage.Poll{
+			ID:            pollRsp.Poll.ID,
+			ChatID:        chatID,
+			MeetLink:      meetLink,
+			Time:          suggestedTime,
+			GoogleEventID: eventID,
+		}); err != nil {
+			rcv.NotifyCreator(fmt.Sprintf("[cmdLetsPlayHandler] stop poll err: %s", err))
+			logrus.WithError(err).Println("[cmdLetsPlayHandler] stop poll")
+		}
+
+		time.AfterFunc(suggestedTime.Sub(time.Now()), func() {
+			rcv.SendMessage(chatID, "Here we go guys! "+meetLink)
+		})
+	}
+
 }

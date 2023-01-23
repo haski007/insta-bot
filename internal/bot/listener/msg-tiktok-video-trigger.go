@@ -19,8 +19,6 @@ func (rcv *InstaBotService) msgTikTokTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
 
-	fmt.Println("zalupa")
-
 	xurlsStrict := xurls.Strict()
 	output := xurlsStrict.FindAllString(update.Message.Text, -1)
 	if len(output) < 1 {

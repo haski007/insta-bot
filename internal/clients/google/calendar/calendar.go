@@ -2,7 +2,10 @@ package calendar
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/haski007/insta-bot/internal/clients/google/transform"
 
 	"github.com/google/uuid"
 	"github.com/haski007/insta-bot/internal/clients/google"
@@ -23,12 +26,6 @@ func New(srv *calendar.Service) google.Calendar {
 //Description: "Here we gonna make some magic and win all the enemies!",
 
 func (rcv *wrapper) CreateMeet(ctx context.Context, req *google.CreateMeetReq) (*google.CreateMeetRsp, error) {
-	var attendees []*calendar.EventAttendee
-
-	for _, email := range req.Guests {
-		attendees = append(attendees, &calendar.EventAttendee{Email: email})
-	}
-
 	event := &calendar.Event{
 		Summary:     req.Summary,
 		Location:    req.Location,
@@ -47,7 +44,7 @@ func (rcv *wrapper) CreateMeet(ctx context.Context, req *google.CreateMeetReq) (
 			},
 		},
 
-		Attendees: attendees,
+		Attendees: transform.ToAttendees(req.Guests),
 	}
 
 	// Insert the Meet into the calendar
@@ -62,5 +59,18 @@ func (rcv *wrapper) CreateMeet(ctx context.Context, req *google.CreateMeetReq) (
 
 	return &google.CreateMeetRsp{
 		MeetLink: createdEvent.HangoutLink,
+		EventID:  createdEvent.Id,
 	}, nil
+}
+
+func (rcv *wrapper) AddGuestsToMeet(_ context.Context, req *google.AddGuestsToMeetReq) error {
+	event, err := rcv.srv.Events.Get(req.CalendarID, req.EventID).Do()
+	if err != nil {
+		return fmt.Errorf("get event err: %w", err)
+	}
+
+	event.Attendees = append(event.Attendees, transform.ToAttendees(req.Guests)...)
+
+	_, err = rcv.srv.Events.Update(req.CalendarID, req.EventID, event).Do()
+	return err
 }

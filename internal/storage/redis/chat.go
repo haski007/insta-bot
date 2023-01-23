@@ -9,6 +9,11 @@ func (r *redisClient) keyFromChatID(context string, chatID int64) string {
 	return fmt.Sprintf("%d/%s", chatID, context)
 }
 
+// keyFromChatIDPollID
+func (r *redisClient) keyFromChatIDPollID(context string, chatID int64, pollID string) string {
+	return fmt.Sprintf("%s/%s", r.keyFromChatID(context, chatID), pollID)
+}
+
 func (r *redisClient) AddChatWithMembers(context string, chatID int64, members []string) error {
 	if err := r.conn.LPush(r.keyFromChatID(context, chatID), members).Err(); err != nil {
 		return fmt.Errorf("redis LPush err: %w", err)
@@ -25,7 +30,6 @@ func (r *redisClient) ChatExists(context string, chatID int64) (bool, error) {
 }
 
 func (r *redisClient) GetChatMembers(context string, chatID int64) (members []string, err error) {
-
 	return r.getStringsArray(r.keyFromChatID(context, chatID))
 }
 

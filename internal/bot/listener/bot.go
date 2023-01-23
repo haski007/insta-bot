@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/haski007/insta-bot/internal/bot"
 	"github.com/haski007/insta-bot/internal/clients/google"
@@ -17,6 +18,9 @@ import (
 const (
 	CSGOContext = "csgo"
 	PUBGContext = "pubg"
+
+	PollContext  = "poll"
+	UsersContext = "users"
 )
 
 type InstaBotService struct {
@@ -78,5 +82,28 @@ func (rcv *InstaBotService) StopPool(_ context.Context) error {
 		return fmt.Errorf("notify creator err: %w", err)
 	}
 	rcv.bot.StopReceivingUpdates()
+	return nil
+}
+
+func (rcv *InstaBotService) RunAfterFuncsPolls() error {
+	polls, err := rcv.storage.GetAllPolls()
+	if err != nil {
+		return fmt.Errorf("get all polls from redis err: %w", err)
+	}
+
+	for _, poll := range polls {
+		if poll.Time.After(time.Now()) {
+			time.AfterFunc(poll.Time.Sub(time.Now()), func() {
+				if err := rcv.SendMessage(poll.ChatID, "Here we go guys! "+poll.MeetLink); err != nil {
+					rcv.log.WithError(err).Println("[afterFunc] send message")
+					return
+				}
+			})
+			rcv.log.WithField("starts_at", poll.Time.String()).
+				Info("added afterFunc to send google meet")
+		}
+
+	}
+
 	return nil
 }

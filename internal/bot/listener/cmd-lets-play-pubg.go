@@ -71,7 +71,8 @@ func (rcv *InstaBotService) cmdLetsPlayPUBGHandler(update tgbotapi.Update) {
 		"(-) Нііі, ні я не ту кохав, не ті слова..., в общем лох я!",
 	}
 
-	if err := rcv.CreatePoll(chatID, voteCaption, false, options...); err != nil {
+	_, err = rcv.CreatePoll(chatID, voteCaption, false, options...)
+	if err != nil {
 		logrus.WithError(err).Println("[cmdLetsPlayPUBGHandler] create poll to chat")
 	}
 }

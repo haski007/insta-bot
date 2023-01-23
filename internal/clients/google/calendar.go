@@ -7,6 +7,13 @@ import (
 
 type Calendar interface {
 	CreateMeet(ctx context.Context, req *CreateMeetReq) (*CreateMeetRsp, error)
+	AddGuestsToMeet(ctx context.Context, req *AddGuestsToMeetReq) error
+}
+
+type AddGuestsToMeetReq struct {
+	CalendarID string
+	EventID    string
+	Guests     []string
 }
 
 type CreateMeetReq struct {
@@ -20,5 +27,6 @@ type CreateMeetReq struct {
 }
 
 type CreateMeetRsp struct {
+	EventID  string
 	MeetLink string
 }
