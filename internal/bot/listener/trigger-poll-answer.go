@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/haski007/insta-bot/internal/clients/google"
+	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/sirupsen/logrus"
 )
 
 func (rcv *InstaBotService) triggerPollAnswer(update tgbotapi.Update) {
@@ -32,7 +32,7 @@ func (rcv *InstaBotService) triggerPollAnswer(update tgbotapi.Update) {
 		return
 	}
 
-	if found && update.PollAnswer.OptionIDs[0] == 0 && userEmail != "" {
+	if found && len(update.PollAnswer.OptionIDs) > 0 && update.PollAnswer.OptionIDs[0] == 0 && userEmail != "" {
 		guests := []string{userEmail}
 
 		poll, err := rcv.storage.GetPoll(pollID)
