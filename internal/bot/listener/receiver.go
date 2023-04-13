@@ -90,13 +90,16 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, "https://www.instagram.com/"):
-				go rcv.msgMediaTrigger(update)
+				//go rcv.msgMediaTrigger(update)
+				rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
 			case strings.Contains(update.Message.Text, "https://instagram.com/stories"):
-				go rcv.msgStoriesTrigger(update)
+				//go rcv.msgStoriesTrigger(update)
+				rcv.log.Infof("Ignore stories: %s due to broken downloader", update.Message.Text)
 
 			case strings.Contains(update.Message.Text, publisher.TikTokBaseUrl) ||
 				strings.Contains(update.Message.Text, publisher.TikTokShareBaseUrl):
-				go rcv.msgTikTokTrigger(update)
+				//go rcv.msgTikTokTrigger(update)
+				rcv.log.Infof("Ignore tiktok: %s due to broken downloader", update.Message.Text)
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
 				go rcv.msgYoutubeTrigger(update)

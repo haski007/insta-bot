@@ -55,6 +55,10 @@ func (rcv *TikTokClient) GetVideoDataFromUrl(url string) (bot.TikTokVideo, error
 		return nil, fmt.Errorf("download url not found in gey response")
 	}
 
+	//fmt.Println(pretty.String(arr))
+	//for i, v := range arr {
+	//	fmt.Printf("||||||||||||| #%d: %s\n", i, text.DecodeUrl(v))
+	//}
 	downloadUrl := text.DecodeUrl(arr[1])
 
 	authorArr := regexp.MustCompile(`"author"\s*:\s*"(.*?)",`).FindStringSubmatch(string(rspData))

@@ -29,14 +29,27 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 		if err == nil {
 			timeToPlay = args[0]
 		}
-		suggestedTime = time.Date(time.Now().Year(),
-			time.Now().Month(),
-			time.Now().Day(),
+		kyivLocation, err := time.LoadLocation("Europe/Kiev")
+		if err != nil {
+			rcv.SendError(chatID, ErrInternalServerError)
+			rcv.log.WithError(err).Error("[cmdLetsPlayHandler] load Kyiv time location")
+			return
+		}
+
+		var nextDay time.Duration
+		if suggestedTime.Hour() < time.Now().In(kyivLocation).Hour() ||
+			suggestedTime.Hour() == time.Now().In(kyivLocation).Hour() && suggestedTime.Minute() < time.Now().In(kyivLocation).Minute() {
+			nextDay = time.Hour * 24
+		}
+
+		suggestedTime = time.Date(time.Now().Add(nextDay).Year(),
+			time.Now().Add(nextDay).Month(),
+			time.Now().Add(nextDay).Day(),
 			suggestedTime.Hour(),
 			suggestedTime.Minute(),
 			suggestedTime.Second(),
 			suggestedTime.Nanosecond(),
-			time.Now().Location()).Add(time.Hour * -1)
+			kyivLocation)
 	}
 
 	// ---> Check if chat is registered not to spam in usual chats
