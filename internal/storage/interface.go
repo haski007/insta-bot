@@ -21,6 +21,8 @@ type Storage interface {
 
 	AddUser(username, email string) error
 	GetUser(username string) (email string, err error)
+
+	IsReadOnly() (bool, error)
 }
 
 type Poll struct {

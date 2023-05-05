@@ -119,9 +119,13 @@ func Run(ctx context.Context, args run.Args) error {
 		calendarSrv,
 	).SetLogger(log)
 
+	// reads from redis all the funcs that should be run in set time
 	if err := botSrv.RunAfterFuncsPolls(); err != nil {
 		return fmt.Errorf("run afterFunc polls err: %w", err)
 	}
+
+	// run a monitor that checks if redis is not read only
+	go botSrv.RedisMonitor()
 
 	if err := tgbotapi.SetLogger(log); err != nil {
 		return fmt.Errorf("set looger for tgbotapi package err: %w", err)
