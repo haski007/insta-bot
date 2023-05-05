@@ -9,6 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/haski007/insta-bot/internal/clients/chatgpt"
+	"github.com/sashabaranov/go-openai"
+
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
@@ -103,8 +106,11 @@ func Run(ctx context.Context, args run.Args) error {
 	redisStorage, err := redisWrapper.NewClient(redCC)
 	if err != nil {
 		return fmt.Errorf("connect to redis err: %w", err)
-
 	}
+
+	// ---> open AI
+	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
+	chatGptSrv := chatgpt.NewService(ai)
 
 	botSrv := listener.NewInstaBotService(
 		ctx,
@@ -117,6 +123,7 @@ func Run(ctx context.Context, args run.Args) error {
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
 		redisStorage,
 		calendarSrv,
+		chatGptSrv,
 	).SetLogger(log)
 
 	// reads from redis all the funcs that should be run in set time

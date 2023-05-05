@@ -5,7 +5,7 @@ import (
 )
 
 func (rcv *InstaBotService) RedisMonitor() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {

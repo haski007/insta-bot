@@ -14,6 +14,7 @@ type Config struct {
 		YoutubeApi YouTubeConfig      `yaml:"youtube_api"`
 		Redis      RedisClient        `yaml:"redis"`
 		Google     GoogleConfig       `yaml:"google"`
+		OpenAI     OpenAIConfig       `yaml:"openai"`
 	}
 	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
 
@@ -22,6 +23,10 @@ type Config struct {
 
 type GoogleConfig struct {
 	CredentialsPath string `yaml:"credentials_path"`
+}
+
+type OpenAIConfig struct {
+	ApiKey string `yaml:"api_key"`
 }
 
 type RedisClient struct {
