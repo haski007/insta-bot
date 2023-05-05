@@ -31,6 +31,7 @@ type OpenAIConfig struct {
 
 type RedisClient struct {
 	Addr string `yaml:"addr"`
+	Pass string `yaml:"pass"`
 }
 
 type YouTubeConfig struct {

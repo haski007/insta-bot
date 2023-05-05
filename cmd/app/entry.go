@@ -99,7 +99,8 @@ func Run(ctx context.Context, args run.Args) error {
 	//}
 
 	redCC := redis.NewClient(&redis.Options{
-		Addr: cfg.Clients.Redis.Addr,
+		Addr:     cfg.Clients.Redis.Addr,
+		Password: cfg.Clients.Redis.Pass,
 	})
 	defer redCC.Close()
 
