@@ -10,7 +10,7 @@ type TgBot interface {
 	SendMessageWithoutMarkdown(chatID int64, message string) error
 	DeleteMessage(chatID int64, messageID int) error
 	NotifyCreator(message string) error
-	SendError(chatID int64, msg string) error
+	SendError(chatID int64, msg string)
 
 	StartPool() error
 	StopPool(ctx context.Context) error

@@ -12,10 +12,20 @@ type Config struct {
 	Clients struct {
 		Instapi    factory.HTTPClient `yaml:"instapi"`
 		YoutubeApi YouTubeConfig      `yaml:"youtube_api"`
+		Redis      RedisClient        `yaml:"redis"`
+		Google     GoogleConfig       `yaml:"google"`
 	}
 	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
 
 	CaptionCharsLimit int `yaml:"caption_chars_limit"`
+}
+
+type GoogleConfig struct {
+	CredentialsPath string `yaml:"credentials_path"`
+}
+
+type RedisClient struct {
+	Addr string `yaml:"addr"`
 }
 
 type YouTubeConfig struct {

@@ -3,14 +3,24 @@ package listener
 import (
 	"context"
 	"fmt"
-
-	"github.com/haski007/insta-bot/internal/clients/youtube"
+	"time"
 
 	"github.com/haski007/insta-bot/internal/bot"
+	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
+	"github.com/haski007/insta-bot/internal/clients/youtube"
+	"github.com/haski007/insta-bot/internal/storage"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+const (
+	CSGOContext = "csgo"
+	PUBGContext = "pubg"
+
+	PollContext  = "poll"
+	UsersContext = "users"
 )
 
 type InstaBotService struct {
@@ -18,7 +28,9 @@ type InstaBotService struct {
 	tiktokApi  *tiktokapi.TikTokClient
 	youtubeApi *youtube.Client
 	instapi    bot.InstApi
+	calendar   google.Calendar
 	updates    tgbotapi.UpdatesChannel
+	storage    storage.Storage
 
 	creatorID         int64
 	captionCharsLimit int
@@ -36,6 +48,8 @@ func NewInstaBotService(
 	captionCharsLimit int,
 	tiktokApi *tiktokapi.TikTokClient,
 	youtubeApi *youtube.Client,
+	storage storage.Storage,
+	calendarSrv google.Calendar,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -46,6 +60,8 @@ func NewInstaBotService(
 		captionCharsLimit: captionCharsLimit,
 		tiktokApi:         tiktokApi,
 		youtubeApi:        youtubeApi,
+		storage:           storage,
+		calendar:          calendarSrv,
 	}
 }
 
@@ -66,5 +82,28 @@ func (rcv *InstaBotService) StopPool(_ context.Context) error {
 		return fmt.Errorf("notify creator err: %w", err)
 	}
 	rcv.bot.StopReceivingUpdates()
+	return nil
+}
+
+func (rcv *InstaBotService) RunAfterFuncsPolls() error {
+	polls, err := rcv.storage.GetAllPolls()
+	if err != nil {
+		return fmt.Errorf("get all polls from redis err: %w", err)
+	}
+
+	for _, poll := range polls {
+		if poll.Time.After(time.Now()) {
+			time.AfterFunc(poll.Time.Sub(time.Now()), func() {
+				if err := rcv.SendMessage(poll.ChatID, "Here we go guys! "+poll.MeetLink); err != nil {
+					rcv.log.WithError(err).Println("[afterFunc] send message")
+					return
+				}
+			})
+			rcv.log.WithField("starts_at", poll.Time.String()).
+				Info("added afterFunc to send google meet")
+		}
+
+	}
+
 	return nil
 }

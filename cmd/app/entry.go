@@ -5,22 +5,29 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/haski007/insta-bot/internal/clients/youtube"
-
+	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
+	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	googleWrapper "github.com/haski007/insta-bot/internal/clients/google"
+	calendarWrapper "github.com/haski007/insta-bot/internal/clients/google/calendar"
+	redisWrapper "github.com/haski007/insta-bot/internal/storage/redis"
 )
 
 func Run(ctx context.Context, args run.Args) error {
@@ -28,12 +35,35 @@ func Run(ctx context.Context, args run.Args) error {
 	log.SetLevel(args.LogLevel)
 	log.SetFormatter(&logrus.JSONFormatter{})
 
-	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
-
 	var cfg Config
 	if err := Load(args.ConfigFile, &cfg); err != nil {
 		return fmt.Errorf("load config %s err: %w", args.ConfigFile, err)
 	}
+
+	// ---> Google AUTH
+	b, err := os.ReadFile(cfg.Clients.Google.CredentialsPath)
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b,
+		calendar.CalendarScope,
+		calendar.CalendarReadonlyScope,
+		calendar.CalendarEventsScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+	client := googleWrapper.GetClient(config)
+
+	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Calendar client: %v", err)
+	}
+
+	calendarSrv := calendarWrapper.New(srv)
+
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
 
 	httpMux := http.NewServeMux()
 	httpMux.Handle("/metrics", promhttp.Handler())
@@ -65,6 +95,17 @@ func Run(ctx context.Context, args run.Args) error {
 	//	return fmt.Errorf("instapi entry login err: %w", err)
 	//}
 
+	redCC := redis.NewClient(&redis.Options{
+		Addr: cfg.Clients.Redis.Addr,
+	})
+	defer redCC.Close()
+
+	redisStorage, err := redisWrapper.NewClient(redCC)
+	if err != nil {
+		return fmt.Errorf("connect to redis err: %w", err)
+
+	}
+
 	botSrv := listener.NewInstaBotService(
 		ctx,
 		botApi,
@@ -74,7 +115,17 @@ func Run(ctx context.Context, args run.Args) error {
 		cfg.CaptionCharsLimit,
 		tiktokapi.New(),
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
+		redisStorage,
+		calendarSrv,
 	).SetLogger(log)
+
+	// reads from redis all the funcs that should be run in set time
+	if err := botSrv.RunAfterFuncsPolls(); err != nil {
+		return fmt.Errorf("run afterFunc polls err: %w", err)
+	}
+
+	// run a monitor that checks if redis is not read only
+	go botSrv.RedisMonitor()
 
 	if err := tgbotapi.SetLogger(log); err != nil {
 		return fmt.Errorf("set looger for tgbotapi package err: %w", err)

@@ -17,9 +17,7 @@ func (rcv *InstaBotService) msgStoriesTrigger(update tgbotapi.Update) {
 	storyInfo, err := rcv.instapi.GetStoryInfoFromUrl(rcv.ctx, url)
 	if err != nil {
 		rcv.log.WithError(err).Println("[msgStoriesTrigger] GetStoryInfoFromUrl")
-		if err := rcv.SendError(chatID, fmt.Sprintf("can't get media from url [%s]", url)); err != nil {
-			rcv.log.WithError(err).Println("[msgStoriesTrigger] send error")
-		}
+		rcv.SendError(chatID, fmt.Sprintf("can't get media from url [%s]", url))
 		return
 	}
 	var downloadedFiles []interface{}
