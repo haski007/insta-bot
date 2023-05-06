@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/haski007/insta-bot/pkg/factory"
 	"gopkg.in/yaml.v2"
@@ -30,8 +31,9 @@ type OpenAIConfig struct {
 }
 
 type RedisClient struct {
-	Addr string `yaml:"addr"`
-	Pass string `yaml:"pass"`
+	Addr               string        `yaml:"addr"`
+	Pass               string        `yaml:"pass"`
+	ConversationTTLMin time.Duration `yaml:"conversation_ttl_min"`
 }
 
 type YouTubeConfig struct {

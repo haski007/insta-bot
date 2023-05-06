@@ -22,7 +22,35 @@ type Storage interface {
 	AddUser(username, email string) error
 	GetUser(username string) (email string, err error)
 
+	// Chat GPT
+	PushConversation(req *PushConversationReq) (err error)
+	GetConversation(req *GetConversationReq) (conversation []Replica, err error)
+
 	IsReadOnly() (bool, error)
+}
+
+type Replica struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+	Name    string `json:"name"`
+}
+
+func (r *Replica) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &r)
+}
+
+func (r Replica) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(r)
+}
+
+type Conversation []Replica
+
+func (r *Conversation) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &r)
+}
+
+func (r Conversation) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(r)
 }
 
 type Poll struct {
@@ -39,4 +67,17 @@ func (p *Poll) UnmarshalBinary(data []byte) error {
 
 func (p Poll) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(p)
+}
+
+type PushConversationReq struct {
+	Username string    `json:"username"`
+	UserID   int64     `json:"user_id"`
+	ChatID   int64     `json:"chat_id"`
+	Replicas []Replica `json:"replicas"`
+}
+
+type GetConversationReq struct {
+	Username string `json:"username"`
+	UserID   int64  `json:"user_id"`
+	ChatID   int64  `json:"chat_id"`
 }

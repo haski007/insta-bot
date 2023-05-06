@@ -2,8 +2,6 @@ package redis
 
 import (
 	"fmt"
-
-	"github.com/haski007/insta-bot/internal/bot/listener"
 )
 
 func (r *redisClient) AddUser(username, email string) error {
@@ -15,5 +13,5 @@ func (r *redisClient) GetUser(username string) (email string, err error) {
 }
 
 func (r *redisClient) keyFromUser(username string) string {
-	return fmt.Sprintf("%s/%s", listener.UsersContext, username)
+	return fmt.Sprintf("users/%s", username)
 }

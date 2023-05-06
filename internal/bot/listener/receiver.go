@@ -22,7 +22,6 @@ func (rcv *InstaBotService) StartPool() error {
 		}
 
 		if update.PollAnswer != nil {
-			rcv.log.Println("here")
 			go rcv.triggerPollAnswer(update)
 			continue
 		}
@@ -106,6 +105,8 @@ func (rcv *InstaBotService) StartPool() error {
 
 			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '?':
 				go rcv.msgChatGPTQuestion(update)
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '!':
+				go rcv.msgChatGTPConversation(update)
 			}
 
 		}
