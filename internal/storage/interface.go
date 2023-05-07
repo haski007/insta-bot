@@ -2,7 +2,12 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
+)
+
+var (
+	ErrNotFound = errors.New("key not found")
 )
 
 type Storage interface {
@@ -23,8 +28,11 @@ type Storage interface {
 	GetUser(username string) (email string, err error)
 
 	// Chat GPT
+	SetSystemRoleForChat(chatID int64, role string) error
+	GetSystemRole(chatID int64) (role string, err error)
 	PushConversation(req *PushConversationReq) (err error)
 	GetConversation(req *GetConversationReq) (conversation []Replica, err error)
+	DropConversation(req *DropConversationReq) (err error)
 
 	IsReadOnly() (bool, error)
 }
@@ -40,16 +48,6 @@ func (r *Replica) UnmarshalBinary(data []byte) error {
 }
 
 func (r Replica) MarshalBinary() (data []byte, err error) {
-	return json.Marshal(r)
-}
-
-type Conversation []Replica
-
-func (r *Conversation) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, &r)
-}
-
-func (r Conversation) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(r)
 }
 
@@ -77,6 +75,12 @@ type PushConversationReq struct {
 }
 
 type GetConversationReq struct {
+	Username string `json:"username"`
+	UserID   int64  `json:"user_id"`
+	ChatID   int64  `json:"chat_id"`
+}
+
+type DropConversationReq struct {
 	Username string `json:"username"`
 	UserID   int64  `json:"user_id"`
 	ChatID   int64  `json:"chat_id"`

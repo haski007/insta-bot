@@ -73,6 +73,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "set_email":
 				go rcv.cmdSetEmailHandler(update)
 
+			case command == "set_system_role":
+				go rcv.cmdSetSystemRoleHandler(update)
+			case command == "drop_my_gpt":
+				go rcv.cmdDropGPTConversationHandler(update)
+
 			default:
 				go func() {
 					if err := rcv.SendMessage(

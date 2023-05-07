@@ -1,13 +1,46 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/storage"
 )
 
 func getConversationKey(username string, chatID, userID int64) string {
-	return fmt.Sprintf("conversations/%s:%d:%d", username, chatID, userID)
+	return fmt.Sprintf("gpt/conversations/%s:%d:%d", username, chatID, userID)
+}
+
+func getSystemRoleKey(chatID int64) string {
+	return fmt.Sprintf("gpt/system-role/%d", chatID)
+}
+
+func (r *redisClient) SetSystemRoleForChat(chatID int64, role string) error {
+	key := getSystemRoleKey(chatID)
+	if err := r.conn.Set(key, role, 0).Err(); err != nil {
+		return fmt.Errorf("redis set err: %w", err)
+	}
+	return nil
+}
+
+func (r *redisClient) GetSystemRole(chatID int64) (role string, err error) {
+	key := getSystemRoleKey(chatID)
+	if err := r.conn.Get(key).Scan(&role); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "", storage.ErrNotFound
+		}
+		return "", fmt.Errorf("redis get err: %w", err)
+	}
+	return role, nil
+}
+
+func (r *redisClient) DropConversation(req *storage.DropConversationReq) (err error) {
+	key := getConversationKey(req.Username, req.ChatID, req.UserID)
+	if err := r.conn.Del(key).Err(); err != nil {
+		return fmt.Errorf("redis del err: %w", err)
+	}
+	return nil
 }
 
 func (r *redisClient) PushConversation(req *storage.PushConversationReq) (err error) {

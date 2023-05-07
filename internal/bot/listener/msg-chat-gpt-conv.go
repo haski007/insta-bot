@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,23 @@ func (rcv *InstaBotService) msgChatGTPConversation(update tgbotapi.Update) {
 		ChatID:   chatID,
 	})
 
+	// ---> Add system role applied to current chat
+	var systemReplica *storage.Replica
+	if !containsRole(history, openai.ChatMessageRoleSystem) {
+		role, err := rcv.storage.GetSystemRole(chatID)
+		if err != nil && !errors.Is(err, storage.ErrNotFound) {
+			rcv.NotifyCreator(fmt.Sprintf("[msgChatGTPConversation] get system role: %s\n", err))
+		}
+
+		if role != "" {
+			systemReplica = &storage.Replica{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: role,
+			}
+			history = append(history, *systemReplica)
+		}
+	}
+
 	gptMessages := transform.ReplicasToGPTMessagesHistory(history)
 
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
@@ -42,21 +60,27 @@ func (rcv *InstaBotService) msgChatGTPConversation(update tgbotapi.Update) {
 		return
 	}
 
+	replicasToSave := []storage.Replica{
+		{
+			Role:    openai.ChatMessageRoleUser,
+			Content: nextPrompt,
+		},
+		{
+			Role:    openai.ChatMessageRoleAssistant,
+			Content: rsp,
+		},
+	}
+
 	// Push to the redis history of conversation new prompt and response
+	if systemReplica != nil {
+		replicasToSave = append(replicasToSave, *systemReplica)
+	}
+
 	if err := rcv.storage.PushConversation(&storage.PushConversationReq{
 		Username: username,
 		UserID:   userID,
 		ChatID:   chatID,
-		Replicas: append(history, []storage.Replica{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: nextPrompt,
-			},
-			{
-				Role:    openai.ChatMessageRoleAssistant,
-				Content: rsp,
-			},
-		}...)},
+		Replicas: replicasToSave},
 	); err != nil {
 		rcv.log.WithError(err).Error("[msgChatGPTQuestion] push conversation")
 		rcv.SendError(chatID, ErrInternalServerError)
@@ -74,4 +98,13 @@ func (rcv *InstaBotService) msgChatGTPConversation(update tgbotapi.Update) {
 		rcv.NotifyCreator(fmt.Sprintf("[msgChatGPTQuestion] send message: %s\n", err))
 		return
 	}
+}
+
+func containsRole(replicas []storage.Replica, targetRole string) bool {
+	for _, r := range replicas {
+		if r.Role == targetRole {
+			return true
+		}
+	}
+	return false
 }
