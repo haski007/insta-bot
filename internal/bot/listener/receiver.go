@@ -108,9 +108,9 @@ func (rcv *InstaBotService) StartPool() error {
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
 				go rcv.msgYoutubeTrigger(update)
 
-			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '?':
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '?' && len([]rune(update.Message.Text)) > 1:
 				go rcv.msgChatGPTQuestion(update)
-			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '!':
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '!' && len([]rune(update.Message.Text)) > 1:
 				go rcv.msgChatGTPConversation(update)
 			}
 
