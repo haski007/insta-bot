@@ -2,9 +2,11 @@ package listener
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/haski007/insta-bot/internal/clients/google"
+	"github.com/haski007/insta-bot/internal/storage"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -26,7 +28,7 @@ func (rcv *InstaBotService) triggerPollAnswer(update tgbotapi.Update) {
 	}
 
 	userEmail, err := rcv.storage.GetUser(username)
-	if err != nil {
+	if err != nil && errors.Is(err, storage.ErrNotFound) {
 		rcv.NotifyCreator(fmt.Sprintf("[triggerPollAnswer] getUser err: %s", err))
 		logrus.WithError(err).WithField("username", username).Println("[triggerPollAnswer] getUser")
 		return

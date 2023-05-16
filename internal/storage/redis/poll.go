@@ -1,10 +1,12 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/storage"
 )
 
@@ -28,9 +30,11 @@ func (r *redisClient) GetPoll(pollID string) (*storage.Poll, error) {
 	var poll = new(storage.Poll)
 
 	if err := r.conn.Get(r.keyFromPollID(pollID)).Scan(poll); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, storage.ErrNotFound
+		}
 		return nil, fmt.Errorf("get and scan poll key: %s err: %w", r.keyFromPollID(pollID), err)
 	}
-
 	return poll, nil
 }
 
