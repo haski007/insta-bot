@@ -22,7 +22,6 @@ func (rcv *InstaBotService) StartPool() error {
 		}
 
 		if update.PollAnswer != nil {
-			rcv.log.Println("here")
 			go rcv.triggerPollAnswer(update)
 			continue
 		}
@@ -74,6 +73,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "set_email":
 				go rcv.cmdSetEmailHandler(update)
 
+			case command == "set_system_role":
+				go rcv.cmdSetSystemRoleHandler(update)
+			case command == "drop_my_gpt":
+				go rcv.cmdDropGPTConversationHandler(update)
+
 			default:
 				go func() {
 					if err := rcv.SendMessage(
@@ -103,6 +107,11 @@ func (rcv *InstaBotService) StartPool() error {
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
 				go rcv.msgYoutubeTrigger(update)
+
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '?' && len([]rune(update.Message.Text)) > 1:
+				go rcv.msgChatGPTQuestion(update)
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '!' && len([]rune(update.Message.Text)) > 1:
+				go rcv.msgChatGTPConversation(update)
 			}
 
 		}

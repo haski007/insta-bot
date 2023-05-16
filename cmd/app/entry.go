@@ -8,16 +8,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/bot/publisher"
+	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/pkg/graceful"
 	"github.com/haski007/insta-bot/pkg/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
@@ -96,15 +99,19 @@ func Run(ctx context.Context, args run.Args) error {
 	//}
 
 	redCC := redis.NewClient(&redis.Options{
-		Addr: cfg.Clients.Redis.Addr,
+		Addr:     cfg.Clients.Redis.Addr,
+		Password: cfg.Clients.Redis.Pass,
 	})
 	defer redCC.Close()
 
-	redisStorage, err := redisWrapper.NewClient(redCC)
+	redisStorage, err := redisWrapper.NewClient(redCC, time.Minute*cfg.Clients.Redis.ConversationTTLMin)
 	if err != nil {
 		return fmt.Errorf("connect to redis err: %w", err)
-
 	}
+
+	// ---> open AI
+	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
+	chatGptSrv := chatgpt.NewService(ai)
 
 	botSrv := listener.NewInstaBotService(
 		ctx,
@@ -117,6 +124,7 @@ func Run(ctx context.Context, args run.Args) error {
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
 		redisStorage,
 		calendarSrv,
+		chatGptSrv,
 	).SetLogger(log)
 
 	// reads from redis all the funcs that should be run in set time

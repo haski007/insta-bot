@@ -10,6 +10,15 @@ func (rcv *InstaBotService) SendMessage(chatID int64, text string) error {
 	return err
 }
 
+func (rcv *InstaBotService) Reply(chatID int64, messageID int, text string) error {
+	message := tgbotapi.NewMessage(chatID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
+	message.ReplyToMessageID = messageID
+
+	_, err := rcv.bot.Send(message)
+	return err
+}
+
 func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 

@@ -1,16 +1,17 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/haski007/insta-bot/internal/bot/listener"
+	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/storage"
 )
 
 func (r *redisClient) keyFromPollID(pollID string) string {
-	return fmt.Sprintf("%s/%s", listener.PollContext, pollID)
+	return fmt.Sprintf("poll/%s", pollID)
 }
 
 func (r *redisClient) PollExists(pollID string) (bool, error) {
@@ -29,15 +30,17 @@ func (r *redisClient) GetPoll(pollID string) (*storage.Poll, error) {
 	var poll = new(storage.Poll)
 
 	if err := r.conn.Get(r.keyFromPollID(pollID)).Scan(poll); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, storage.ErrNotFound
+		}
 		return nil, fmt.Errorf("get and scan poll key: %s err: %w", r.keyFromPollID(pollID), err)
 	}
-
 	return poll, nil
 }
 
 func (r *redisClient) GetAllPolls() (map[string]*storage.Poll, error) {
 	var result = make(map[string]*storage.Poll)
-	iter := r.conn.Scan(0, fmt.Sprintf("%s/*", listener.PollContext), 0).Iterator()
+	iter := r.conn.Scan(0, fmt.Sprintf("poll/*"), 0).Iterator()
 	for iter.Next() {
 		poll, err := r.GetPoll(strings.Split(iter.Val(), "/")[1])
 		if err != nil {

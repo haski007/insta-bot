@@ -8,15 +8,17 @@ import (
 )
 
 type redisClient struct {
-	conn *redis.Client
+	conn    *redis.Client
+	convTTL time.Duration
 }
 
-func NewClient(conn *redis.Client) (storage.Storage, error) {
+func NewClient(conn *redis.Client, convTTL time.Duration) (storage.Storage, error) {
 	if err := conn.Ping().Err(); err != nil {
 		return nil, err
 	}
 	return &redisClient{
-		conn: conn,
+		conn:    conn,
+		convTTL: convTTL,
 	}, nil
 }
 

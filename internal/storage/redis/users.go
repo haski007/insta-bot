@@ -1,9 +1,11 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/haski007/insta-bot/internal/bot/listener"
+	"github.com/go-redis/redis"
+	"github.com/haski007/insta-bot/internal/storage"
 )
 
 func (r *redisClient) AddUser(username, email string) error {
@@ -11,9 +13,14 @@ func (r *redisClient) AddUser(username, email string) error {
 }
 
 func (r *redisClient) GetUser(username string) (email string, err error) {
-	return r.conn.Get(r.keyFromUser(username)).Result()
+	email, err = r.conn.Get(r.keyFromUser(username)).Result()
+	if err != nil && errors.Is(err, redis.Nil) {
+		return "", storage.ErrNotFound
+	}
+
+	return
 }
 
 func (r *redisClient) keyFromUser(username string) string {
-	return fmt.Sprintf("%s/%s", listener.UsersContext, username)
+	return fmt.Sprintf("users/%s", username)
 }

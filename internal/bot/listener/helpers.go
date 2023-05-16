@@ -5,7 +5,7 @@ import (
 )
 
 func (rcv *InstaBotService) RedisMonitor() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -17,9 +17,9 @@ func (rcv *InstaBotService) RedisMonitor() {
 
 		if readonly {
 			ticker.Reset(6 * time.Hour)
-			rcv.NotifyCreator("[RedisMonitor] Redis is in read-only mode")
+			rcv.log.Debugln("[RedisMonitor] redis is readonly")
 		} else {
-			rcv.log.WithField("readonly", readonly).Debugln("[RedisMonitor] redis is NOT readonly")
+			rcv.log.Debugln("[RedisMonitor] redis is NOT readonly")
 		}
 	}
 

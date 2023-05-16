@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/haski007/insta-bot/internal/clients/chatgpt"
+
 	"github.com/haski007/insta-bot/internal/bot"
 	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
@@ -31,6 +33,7 @@ type InstaBotService struct {
 	calendar   google.Calendar
 	updates    tgbotapi.UpdatesChannel
 	storage    storage.Storage
+	gpt        *chatgpt.Service
 
 	creatorID         int64
 	captionCharsLimit int
@@ -50,6 +53,7 @@ func NewInstaBotService(
 	youtubeApi *youtube.Client,
 	storage storage.Storage,
 	calendarSrv google.Calendar,
+	gpt *chatgpt.Service,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -62,6 +66,7 @@ func NewInstaBotService(
 		youtubeApi:        youtubeApi,
 		storage:           storage,
 		calendar:          calendarSrv,
+		gpt:               gpt,
 	}
 }
 
