@@ -8,6 +8,7 @@ import (
 type Calendar interface {
 	CreateMeet(ctx context.Context, req *CreateMeetReq) (*CreateMeetRsp, error)
 	AddGuestsToMeet(ctx context.Context, req *AddGuestsToMeetReq) error
+	RefreshToken(ctx context.Context) error
 }
 
 type AddGuestsToMeetReq struct {

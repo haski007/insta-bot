@@ -57,14 +57,14 @@ func Run(ctx context.Context, args run.Args) error {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	client := googleWrapper.GetClient(config)
+	gClient, gTokenSource := googleWrapper.GetClient(config)
 
-	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	gSrv, err := calendar.NewService(ctx, option.WithHTTPClient(gClient))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Calendar client: %v", err)
 	}
 
-	calendarSrv := calendarWrapper.New(srv)
+	calendarSrv := calendarWrapper.New(gSrv, gTokenSource, config)
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
 

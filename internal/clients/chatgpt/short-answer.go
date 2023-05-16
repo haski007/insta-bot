@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/haski007/pretty"
-
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -37,6 +35,5 @@ Question: %s", question)`, QuestionDelimiter+question+QuestionDelimiter)
 		return "", fmt.Errorf("create chat completion: %w", err)
 	}
 
-	fmt.Println(pretty.String(res))
 	return res.Choices[0].Message.Content, nil
 }
