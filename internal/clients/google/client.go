@@ -12,7 +12,7 @@ import (
 )
 
 // GetClient - Retrieve a token, saves the token, then returns the generated client.
-func GetClient(config *oauth2.Config) *http.Client {
+func GetClient(config *oauth2.Config) (cli *http.Client, tokSource oauth2.TokenSource) {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
@@ -22,7 +22,8 @@ func GetClient(config *oauth2.Config) *http.Client {
 		tok = getTokenFromWeb(config)
 		saveToken(tokFile, tok)
 	}
-	return config.Client(context.Background(), tok)
+
+	return config.Client(context.Background(), tok), config.TokenSource(context.Background(), tok)
 }
 
 // Request a token from the web, then returns the retrieved token.

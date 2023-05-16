@@ -5,25 +5,31 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/haski007/insta-bot/internal/clients/google/transform"
-
 	"github.com/google/uuid"
 	"github.com/haski007/insta-bot/internal/clients/google"
-	"github.com/sirupsen/logrus"
+	"github.com/haski007/insta-bot/internal/clients/google/transform"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 )
 
 type wrapper struct {
-	srv *calendar.Service
+	srv         *calendar.Service
+	tokenSource oauth2.TokenSource
+	config      *oauth2.Config
 }
 
-func New(srv *calendar.Service) google.Calendar {
-	return &wrapper{srv: srv}
+func New(
+	srv *calendar.Service,
+	tokenSource oauth2.TokenSource,
+	config *oauth2.Config,
+) google.Calendar {
+	return &wrapper{
+		srv:         srv,
+		tokenSource: tokenSource,
+		config:      config,
+	}
 }
-
-//Summary:     "Test cs go meeting",
-//Location:    "Forsage dance club",
-//Description: "Here we gonna make some magic and win all the enemies!",
 
 func (rcv *wrapper) CreateMeet(ctx context.Context, req *google.CreateMeetReq) (*google.CreateMeetRsp, error) {
 	event := &calendar.Event{
@@ -54,13 +60,25 @@ func (rcv *wrapper) CreateMeet(ctx context.Context, req *google.CreateMeetReq) (
 		Context(ctx).
 		Do()
 	if err != nil {
-		logrus.WithError(err).Fatal("insert event")
+		return nil, err
 	}
 
 	return &google.CreateMeetRsp{
 		MeetLink: createdEvent.HangoutLink,
 		EventID:  createdEvent.Id,
 	}, nil
+}
+
+func (rcv *wrapper) RefreshToken(ctx context.Context) error {
+	token, err := rcv.tokenSource.Token()
+	if err != nil {
+		return fmt.Errorf("token source err: %w", err)
+	}
+	rcv.srv, err = calendar.NewService(
+		context.Background(),
+		option.WithHTTPClient(rcv.config.Client(ctx, token)),
+	)
+	return nil
 }
 
 func (rcv *wrapper) AddGuestsToMeet(_ context.Context, req *google.AddGuestsToMeetReq) error {

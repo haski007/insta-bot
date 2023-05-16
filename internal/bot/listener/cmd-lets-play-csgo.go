@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/haski007/insta-bot/internal/storage"
-
 	"github.com/haski007/insta-bot/internal/clients/google"
+	"github.com/haski007/insta-bot/internal/storage"
+	"github.com/haski007/insta-bot/pkg/emoji"
 	"github.com/sirupsen/logrus"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -88,7 +88,7 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 		voteCaption = fmt.Sprintf("%s CS GO в %s?", voteCaption, timeToPlay)
 		message += fmt.Sprintf("\nХто буде в коунтер стріке в %s? Галасуєм!", timeToPlay)
 
-		rsp, err := rcv.calendar.CreateMeet(context.Background(), &google.CreateMeetReq{
+		var req = &google.CreateMeetReq{
 			Summary:     "Very important meeting",
 			Location:    "Forsage dance club",
 			Description: "Here we gonna make some magic and win all the enemies!",
@@ -96,10 +96,25 @@ func (rcv *InstaBotService) cmdLetsPlayHandler(update tgbotapi.Update) {
 			Guests:      nil,
 			StartTime:   suggestedTime,
 			EndTime:     suggestedTime.Add(time.Hour),
-		})
+		}
+		rsp, err := rcv.calendar.CreateMeet(context.Background(), req)
 		if err != nil {
 			rcv.NotifyCreator(fmt.Sprintf("can't create google meet err: %s", err))
 			rcv.log.WithError(err).Println("create google meet")
+			if err := rcv.calendar.RefreshToken(context.Background()); err != nil {
+				rcv.NotifyCreator(fmt.Sprintf("can't refresh google token err: %s", err))
+				rcv.log.WithError(err).Println("refresh google token")
+				return
+			} else {
+				rsp, err = rcv.calendar.CreateMeet(context.Background(), req)
+				if err != nil {
+					rcv.NotifyCreator(fmt.Sprintf("can't create google meet after refresh token err: %s", err))
+					rcv.log.WithError(err).Println("create google meet")
+					return
+				} else {
+					rcv.NotifyCreator("google token has been refreshed" + emoji.Check)
+				}
+			}
 		}
 		meetLink = rsp.MeetLink
 		eventID = rsp.EventID
