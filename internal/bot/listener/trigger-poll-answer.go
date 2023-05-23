@@ -29,8 +29,8 @@ func (rcv *InstaBotService) triggerPollAnswer(update tgbotapi.Update) {
 
 	userEmail, err := rcv.storage.GetUser(username)
 	if err != nil && errors.Is(err, storage.ErrNotFound) {
-		rcv.NotifyCreator(fmt.Sprintf("[triggerPollAnswer] getUser err: %s", err))
-		logrus.WithError(err).WithField("username", username).Println("[triggerPollAnswer] getUser")
+		// rcv.NotifyCreator(fmt.Sprintf("[triggerPollAnswer] getUser err: %s", err))
+		logrus.WithError(err).WithField("username", username).Debugln("[triggerPollAnswer] getUser")
 		return
 	}
 
