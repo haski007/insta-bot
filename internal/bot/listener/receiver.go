@@ -93,10 +93,10 @@ func (rcv *InstaBotService) StartPool() error {
 		// Parse messages
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
-			case strings.Contains(update.Message.Text, "https://www.instagram.com/"):
-				//go rcv.msgMediaTrigger(update)
-				rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
-			case strings.Contains(update.Message.Text, "https://instagram.com/stories"):
+			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
+				go rcv.msgMediaTrigger(update)
+				//rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
+			case strings.Contains(update.Message.Text, publisher.InstagramStoriesBaseUrl):
 				//go rcv.msgStoriesTrigger(update)
 				rcv.log.Infof("Ignore stories: %s due to broken downloader", update.Message.Text)
 
@@ -106,7 +106,8 @@ func (rcv *InstaBotService) StartPool() error {
 				rcv.log.Infof("Ignore tiktok: %s due to broken downloader", update.Message.Text)
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
-				go rcv.msgYoutubeTrigger(update)
+				//go rcv.msgYoutubeTrigger(update)
+				rcv.log.Infof("Ignore youtube: %s due to broken downloader", update.Message.Text)
 
 			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '?' && len([]rune(update.Message.Text)) > 1:
 				go rcv.msgChatGPTQuestion(update)

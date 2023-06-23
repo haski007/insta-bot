@@ -6,5 +6,6 @@ vendor/
 
 .*
 *.json
+resources/*
 
 config/local.yaml

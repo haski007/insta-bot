@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
-	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 	"github.com/haski007/insta-bot/internal/clients/instapi"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
@@ -82,21 +81,7 @@ func Run(ctx context.Context, args run.Args) error {
 	u.Timeout = cfg.TelegramBot.UpdatesTimeoutSec
 	chUpdates := botApi.GetUpdatesChan(u)
 
-	instapiCfg := instapi.NewConfiguration()
-	instapiCfg.Host = cfg.Clients.Instapi.Addr
-	instapiCfg.Scheme = "http"
-	instapiCli := instapi.NewAPIClient(instapiCfg)
-
-	apiCli := publisher.New(
-		instapiCli,
-		cfg.Clients.Instapi.Username,
-		cfg.Clients.Instapi.Password,
-		cfg.Clients.Instapi.VerificationCode)
-
-	// TODO: uncomment after debug
-	//if err := apiCli.Login(ctx); err != nil {
-	//	return fmt.Errorf("instapi entry login err: %w", err)
-	//}
+	apiCli := instapi.New()
 
 	redCC := redis.NewClient(&redis.Options{
 		Addr:     cfg.Clients.Redis.Addr,

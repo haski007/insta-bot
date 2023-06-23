@@ -11,11 +11,10 @@ import (
 
 type Config struct {
 	Clients struct {
-		Instapi    factory.HTTPClient `yaml:"instapi"`
-		YoutubeApi YouTubeConfig      `yaml:"youtube_api"`
-		Redis      RedisClient        `yaml:"redis"`
-		Google     GoogleConfig       `yaml:"google"`
-		OpenAI     OpenAIConfig       `yaml:"openai"`
+		YoutubeApi YouTubeConfig `yaml:"youtube_api"`
+		Redis      RedisClient   `yaml:"redis"`
+		Google     GoogleConfig  `yaml:"google"`
+		OpenAI     OpenAIConfig  `yaml:"openai"`
 	}
 	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
 

@@ -1,18 +1,13 @@
 package listener
 
 import (
-	"errors"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/haski007/insta-bot/internal/clients/instapi"
-
-	"github.com/haski007/insta-bot/pkg/text"
-
-	"github.com/haski007/insta-bot/internal/bot"
-
-	"github.com/haski007/insta-bot/internal/bot/publisher"
+	"github.com/haski007/insta-bot/internal/bot/model"
 	"github.com/haski007/insta-bot/pkg/file"
+	"github.com/haski007/insta-bot/pkg/text"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -26,88 +21,47 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 	url := update.Message.Text
 
-	mediaInfo, err := rcv.instapi.GetMediaInfoFromURL(rcv.ctx, url)
+	content, err := rcv.instapi.GetPostContent(url)
 	if err != nil {
-		rcv.log.WithError(err).Println("[msgMediaTrigger] GetMediaInfoFromURL")
-		rcv.SendError(chatID, fmt.Sprintf("can't get media from url [%s]", url))
+		rcv.log.WithError(err).Error("[msgMediaTrigger] get post content")
+		rcv.SendError(chatID, ErrInternalServerError)
 		return
 	}
-	var downloadedFiles []interface{}
-	mediaType := publisher.MediaType(mediaInfo.GetMediaType())
-	switch mediaType {
-	case publisher.Video:
-		name := *mediaInfo.GetUser().Username + mediaInfo.GetPk()
 
-		fileData, err := downloadResource(mediaInfo.GetVideoUrl(), name, mediaType)
-		if err != nil {
-			if errors.Is(err, bot.ErrWrongFileFormat) {
-				rcv.SendError(chatID, "wrong file format, or not supported yet, write please to creator: @pdemian")
-			}
-			rcv.log.WithError(err).
-				WithFields(map[string]interface{}{
-					"mediaType":   mediaInfo.GetMediaType(),
-					"productType": mediaInfo.GetProductType(),
-				}).
-				Println("[msgMediaTrigger] download resource")
-			return
-		}
+	// ---> download videos and photos
+	videosBytes, err := downloadAndGetVideoFilesBytes(content.Video)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgMediaTrigger] download videos")
+		rcv.SendError(chatID, ErrInternalServerError)
+		return
+	}
 
-		downloadedFiles = append(downloadedFiles, fileData)
+	imagesBytes, err := downloadAndGetImageFilesBytes(content.Image)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgMediaTrigger] download images")
+		rcv.SendError(chatID, ErrInternalServerError)
+		return
+	}
 
-	case publisher.Photo:
-		name := *mediaInfo.GetUser().Username + mediaInfo.GetPk()
+	downloadedFilesBytes := append(videosBytes, imagesBytes...)
 
-		fileData, err := downloadResource(mediaInfo.GetThumbnailUrl(), name, mediaType)
-		if err != nil {
-			if errors.Is(err, bot.ErrWrongFileFormat) {
-				rcv.SendError(chatID, "wrong file format, or not supported yet, write please to creator: @pdemian")
-			}
-			rcv.log.WithError(err).
-				WithFields(map[string]interface{}{
-					"mediaType":   mediaInfo.GetMediaType(),
-					"productType": mediaInfo.GetProductType(),
-				}).
-				Println("[msgMediaTrigger] download resource")
-			return
-		}
-
-		downloadedFiles = append(downloadedFiles, fileData)
-
-	case publisher.Album:
-		downloaded, err := downloadResources(mediaInfo)
-		if err != nil {
-			if errors.Is(err, bot.ErrWrongFileFormat) {
-				rcv.SendError(chatID, "wrong file format, or not supported yet, write please to creator: @pdemian")
-			}
-			rcv.log.WithError(err).
-				WithFields(map[string]interface{}{
-					"mediaType":   mediaInfo.GetMediaType(),
-					"productType": mediaInfo.GetProductType(),
-				}).
-				Println("[msgMediaTrigger] download resources")
-			return
-		}
-		downloadedFiles = append(downloadedFiles, downloaded...)
+	mdg := tgbotapi.NewMediaGroup(chatID, downloadedFilesBytes)
+	if _, err := rcv.bot.SendMediaGroup(mdg); err != nil {
+		rcv.log.WithError(err).Error("[msgMediaTrigger] send media group")
+		return
 	}
 
 	if err := rcv.DeleteMessage(chatID, messageID); err != nil {
 		rcv.log.WithError(err).Error("[msgMediaTrigger] delete message")
 	}
 
-	mdg := tgbotapi.NewMediaGroup(chatID, downloadedFiles)
-	if _, err := rcv.bot.SendMediaGroup(mdg); err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] send media group")
-		return
-	}
-
-	var message = fmt.Sprintf("Media from author: [%s %s](%s)\n\n"+
+	var message = fmt.Sprintf("Instagram post  from author: [%s](%s)\n\n"+
 		"Description: %s\n\n"+
 		"source: [instagram](%s)\n\n"+
 		"shared by: @%s %s",
-		*mediaInfo.GetUser().Username,
-		*mediaInfo.GetUser().FullName,
-		publisher.InstagramBaseUrl+*mediaInfo.GetUser().Username,
-		text.CharLimiterToWord(mediaInfo.GetCaptionText(), rcv.captionCharsLimit),
+		content.Author.Name,
+		content.Author.GetProfileURL(),
+		text.CharLimiterToWord(content.ArticleBody, rcv.captionCharsLimit),
 		url,
 		update.Message.From.UserName, update.Message.From.FirstName+" "+update.Message.From.LastName)
 	if err := rcv.SendMessage(chatID, message); err != nil {
@@ -116,60 +70,48 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	}
 }
 
-func downloadResources(mediaInfo *instapi.Media) (filesData []interface{}, err error) {
-	for _, r := range mediaInfo.Resources {
-		name := *mediaInfo.GetUser().Username + r.GetPk()
-
-		fileData, err := downloadResource(r.GetThumbnailUrl(), name, publisher.MediaType(r.GetMediaType()))
+func downloadAndGetVideoFilesBytes(videos []*model.Video) ([]interface{}, error) {
+	var downloadedFilesBytes []interface{}
+	for _, v := range videos {
+		fileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ".mp4")
+		filePath, err := v.DownloadAsFile(tmpDirPath, fileName)
 		if err != nil {
-			return nil, fmt.Errorf("download resource err: %w", err)
+			return nil, fmt.Errorf("download video err: %w", err)
+		}
+		fileBytes, err := getFileBytes(filePath, fileName)
+		if err != nil {
+			return nil, fmt.Errorf("get file bytes err: %w", err)
 		}
 
-		filesData = append(filesData, fileData)
-	}
+		if err := file.DeleteFile(filePath); err != nil {
+			return nil, fmt.Errorf("[msgMediaTrigger] image delete file err: %w", err)
+		}
 
-	return
+		downloadedFilesBytes = append(downloadedFilesBytes, tgbotapi.NewInputMediaVideo(fileBytes))
+	}
+	return downloadedFilesBytes, nil
 }
 
-func downloadResource(url string, name string, mediaType publisher.MediaType) (interface{}, error) {
-	var extention string
-	switch mediaType {
-	case publisher.Photo:
-		extention = ".jpg"
-	case publisher.Video:
-		extention = ".mp4"
-
-	}
-
-	filepath, err := file.Download(url, tmpDirPath, name+extention)
-	if err != nil {
-		return nil, fmt.Errorf("[msgMediaTrigger] download media file err: %w", err)
-	}
-
-	switch mediaType {
-	case publisher.Photo:
-		photoBytes, err := getFileBytes(filepath, name)
+func downloadAndGetImageFilesBytes(videos []*model.Image) ([]interface{}, error) {
+	var downloadedFilesBytes []interface{}
+	for _, v := range videos {
+		fileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ".jpg")
+		filePath, err := v.DownloadAsFile(tmpDirPath, fileName)
 		if err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] photo getFileBytes %w", err)
+			return nil, fmt.Errorf("download video err: %w", err)
 		}
-		if err := file.DeleteFile(filepath); err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] photo delete file err: %w", err)
-		}
-
-		return tgbotapi.NewInputMediaPhoto(photoBytes), nil
-	case publisher.Video:
-		videoBytes, err := getFileBytes(filepath, name)
+		fileBytes, err := getFileBytes(filePath, fileName)
 		if err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] video getFileBytes %w", err)
-		}
-		if err := file.DeleteFile(filepath); err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] video delete file err: %w", err)
+			return nil, fmt.Errorf("get file bytes err: %w", err)
 		}
 
-		return tgbotapi.NewInputMediaVideo(videoBytes), nil
+		if err := file.DeleteFile(filePath); err != nil {
+			return nil, fmt.Errorf("[msgMediaTrigger] image delete file err: %w", err)
+		}
+
+		downloadedFilesBytes = append(downloadedFilesBytes, tgbotapi.NewInputMediaPhoto(fileBytes))
 	}
-
-	return nil, bot.ErrWrongFileFormat
+	return downloadedFilesBytes, nil
 }
 
 func getFileBytes(filepath, name string) (tgbotapi.FileBytes, error) {

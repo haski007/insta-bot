@@ -38,6 +38,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	github.com/haski007/pretty v0.0.0-20210902161444-e38ffafc4f95 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect

@@ -6,6 +6,7 @@ const (
 	HouseWithGarden = "\U0001F3E1"
 	Car             = "\U0001F697"
 	Gear            = "\U00002699"
+	SadFace         = "\U00002639"
 	Plus            = "\U00002795"
 	Minus           = "\U00002796"
 	Box             = "\U0001F371"
