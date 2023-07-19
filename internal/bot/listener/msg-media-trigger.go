@@ -3,6 +3,7 @@ package listener
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/haski007/insta-bot/internal/bot/model"
@@ -16,10 +17,12 @@ const (
 	tmpDirPath = "./resources"
 )
 
+var exprFindURL = regexp.MustCompile(`https?://[^\s]+`)
+
 func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
-	url := update.Message.Text
+	url := exprFindURL.FindString(update.Message.Text)
 
 	content, err := rcv.instapi.GetPostContent(url)
 	if err != nil {
