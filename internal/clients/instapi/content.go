@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/haski007/insta-bot/internal/bot/model"
 	"github.com/sirupsen/logrus"
 )
 
-type GetPostContentResponse struct {
+type GetPostContentResponse []*GetPostContentResponseObj
+
+type GetPostContentResponseObj struct {
 	ArticleBody string `json:"articleBody"`
 
 	Author model.Author   `json:"author"`
@@ -21,7 +21,7 @@ type GetPostContentResponse struct {
 	Image  []*model.Image `json:"image"`
 }
 
-func (rcv *Api) GetPostContent(url string) (*GetPostContentResponse, error) {
+func (rcv *Api) GetPostContent(url string) (*GetPostContentResponseObj, error) {
 	rsp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error getting reels download URL: %w", err)
@@ -46,29 +46,15 @@ func (rcv *Api) GetPostContent(url string) (*GetPostContentResponse, error) {
 		logrus.Fatalf("error writing test.json: %s", err)
 	}
 
-	var response = new(GetPostContentResponse)
+	var response GetPostContentResponse
 
-	if err := json.Unmarshal([]byte(jsonPart), response); err != nil {
+	if err := json.Unmarshal([]byte(jsonPart), &response); err != nil {
 		return nil, fmt.Errorf("error decoding reels download URL: %w", err)
 	}
 
-	// Unescape video URLs
-	for _, v := range response.Video {
-		v.DownloadUrl = strings.ReplaceAll(v.DownloadUrl, `\/`, `/`)
-		v.DownloadUrl, err = strconv.Unquote(`"` + v.DownloadUrl + `"`)
-		if err != nil {
-			return nil, fmt.Errorf("error unquoting reels download URL: %w", err)
-		}
+	if len(response) == 0 {
+		return nil, fmt.Errorf("empty response")
 	}
 
-	// Unescape video URLs
-	for _, i := range response.Image {
-		i.DownloadUrl = strings.ReplaceAll(i.DownloadUrl, `\/`, `/`)
-		i.DownloadUrl, err = strconv.Unquote(`"` + i.DownloadUrl + `"`)
-		if err != nil {
-			return nil, fmt.Errorf("error unquoting reels download URL: %w", err)
-		}
-	}
-
-	return response, nil
+	return response[0], nil
 }

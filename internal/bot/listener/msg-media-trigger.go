@@ -51,9 +51,9 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 		return
 	}
 
-	if err := rcv.DeleteMessage(chatID, messageID); err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] delete message")
-	}
+	content.ArticleBody = escapeMarkdown(content.ArticleBody)
+	content.Author.Name = escapeMarkdown(content.Author.Name)
+	content.Author.Identifier.Value = escapeMarkdown(content.Author.Identifier.Value)
 
 	var message = fmt.Sprintf("Instagram post  from author: [%s](%s)\n\n"+
 		"Description: %s\n\n"+
@@ -67,6 +67,10 @@ func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
 	if err := rcv.SendMessage(chatID, message); err != nil {
 		rcv.log.WithError(err).Error("[msgMediaTrigger] send message caption")
 		return
+	}
+
+	if err := rcv.DeleteMessage(chatID, messageID); err != nil {
+		rcv.log.WithError(err).Error("[msgMediaTrigger] delete message")
 	}
 }
 

@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"strings"
 	"time"
 )
 
@@ -22,5 +23,24 @@ func (rcv *InstaBotService) RedisMonitor() {
 			rcv.log.Debugln("[RedisMonitor] redis is NOT readonly")
 		}
 	}
+}
 
+func escapeMarkdown(v string) string {
+	v = strings.ReplaceAll(v, "_", "\\_")
+	v = strings.ReplaceAll(v, "*", "\\*")
+	v = strings.ReplaceAll(v, "[", "\\[")
+	v = strings.ReplaceAll(v, "]", "\\]")
+	v = strings.ReplaceAll(v, "~", "\\~")
+	v = strings.ReplaceAll(v, "`", "\\`")
+	v = strings.ReplaceAll(v, ">", "\\>")
+	v = strings.ReplaceAll(v, "+", "\\+")
+	v = strings.ReplaceAll(v, "-", "\\-")
+	v = strings.ReplaceAll(v, "=", "\\=")
+	v = strings.ReplaceAll(v, "{", "\\{")
+	v = strings.ReplaceAll(v, "}", "\\}")
+	v = strings.ReplaceAll(v, "|", "\\|")
+	v = strings.ReplaceAll(v, ".", "\\.")
+	v = strings.ReplaceAll(v, "!", "\\!")
+
+	return v
 }
