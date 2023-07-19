@@ -18,7 +18,7 @@ func TestService_GetShortAnswer(t *testing.T) {
 	ai := openai.NewClient(key)
 	srv := NewService(ai)
 
-	answer, err := srv.GetShortAnswer(context.Background(), "What is the capital of the USA?")
+	answer, err := srv.GetShortAnswerGPT4(context.Background(), "What is the capital of the USA?")
 	if err != nil {
 		t.Error(err)
 	}

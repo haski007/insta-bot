@@ -13,7 +13,7 @@ func (rcv *InstaBotService) msgChatGPTQuestion(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 
 	question := strings.TrimPrefix(update.Message.Text, "?")
-	rsp, err := rcv.gpt.GetShortAnswer(context.Background(), question)
+	rsp, err := rcv.gpt.GetShortAnswerGPT4(context.Background(), question)
 	if err != nil {
 		rcv.log.WithError(err).Error("[msgChatGPTQuestion] get short answer")
 		rcv.SendError(chatID, ErrInternalServerError)
