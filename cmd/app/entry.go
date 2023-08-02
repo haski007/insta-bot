@@ -96,7 +96,10 @@ func Run(ctx context.Context, args run.Args) error {
 
 	// ---> open AI
 	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
-	chatGptSrv := chatgpt.NewService(ai)
+	chatGptSrv, err := chatgpt.NewService(ai, cfg.Clients.OpenAI.GPTModel)
+	if err != nil {
+		return fmt.Errorf("chat gpt service err: %w", err)
+	}
 
 	botSrv := listener.NewInstaBotService(
 		ctx,

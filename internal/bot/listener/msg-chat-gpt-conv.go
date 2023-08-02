@@ -52,7 +52,7 @@ func (rcv *InstaBotService) msgChatGTPConversation(update tgbotapi.Update) {
 	})
 
 	// Get answer from GPT on prompt that depends on history of conversation
-	rsp, err := rcv.gpt.ConversationGPT4(context.Background(), gptMessages)
+	rsp, err := rcv.gpt.Conversation(context.Background(), gptMessages)
 	if err != nil {
 		rcv.log.WithError(err).Error("[msgChatGPTQuestion] get short answer")
 		rcv.SendError(chatID, ErrInternalServerError)

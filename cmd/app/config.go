@@ -26,7 +26,8 @@ type GoogleConfig struct {
 }
 
 type OpenAIConfig struct {
-	ApiKey string `yaml:"api_key"`
+	ApiKey   string `yaml:"api_key"`
+	GPTModel string `yaml:"gpt_model"`
 }
 
 type RedisClient struct {
