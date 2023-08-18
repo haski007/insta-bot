@@ -78,6 +78,9 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "drop_my_gpt":
 				go rcv.cmdDropGPTConversationHandler(update)
 
+			case command == "spam":
+				go rcv.cmdSpam(update)
+
 			default:
 				go func() {
 					if err := rcv.SendMessage(
