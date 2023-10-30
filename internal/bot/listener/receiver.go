@@ -97,8 +97,8 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
-				go rcv.msgMediaTrigger(update)
-				//rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
+				//go rcv.msgMediaTrigger(update)
+				rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
 			case strings.Contains(update.Message.Text, publisher.InstagramStoriesBaseUrl):
 				//go rcv.msgStoriesTrigger(update)
 				rcv.log.Infof("Ignore stories: %s due to broken downloader", update.Message.Text)

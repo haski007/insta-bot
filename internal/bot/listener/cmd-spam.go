@@ -19,6 +19,7 @@ func (rcv *InstaBotService) cmdSpam(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	if !rcv.IsCreator(update.Message.From.ID) {
 		rcv.SendError(chatID, ErrAccessDenied)
+		return
 	}
 
 	args := strings.Fields(update.Message.CommandArguments())
@@ -51,7 +52,7 @@ func (rcv *InstaBotService) cmdSpam(update tgbotapi.Update) {
 			}
 		}
 
-		if err := rcv.SendMessage(chatID, message); err != nil {
+		if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
 			logrus.WithError(err).Println("[cmdSpam] send message to chat")
 		}
 		time.Sleep(time.Millisecond * 500)
