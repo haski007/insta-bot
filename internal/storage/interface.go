@@ -34,6 +34,12 @@ type Storage interface {
 	GetConversation(req *GetConversationReq) (conversation []Replica, err error)
 	DropConversation(req *DropConversationReq) (err error)
 
+	SubscribeChatToStartup(chatID int64) error
+	UnsubscribeChatToStartup(chatID int64) error
+	PushStartupNewsletter(chatID int64, replicas []Replica) error
+	GetStartupNewsletter(chatID int64) (conversation []Replica, err error)
+	GetAllStartupNewsletters() (newsletterConv map[int64][]Replica, err error)
+
 	IsReadOnly() (bool, error)
 }
 

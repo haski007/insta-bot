@@ -2,6 +2,10 @@ package redis
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/haski007/insta-bot/internal/storage"
 )
 
 // keyFromChatID - context is a folder where to store keys to storage diff chats for diff purposes
@@ -66,4 +70,66 @@ func (r *redisClient) GetAllCTXs(chatID int64) (map[string][]string, error) {
 	}
 
 	return result, nil
+}
+
+func getStartupSubKey(chatID int64) string {
+	return fmt.Sprintf("sub/startup/%d", chatID)
+}
+
+func (r *redisClient) SubscribeChatToStartup(chatID int64) error {
+	key := getStartupSubKey(chatID)
+
+	if err := r.conn.LPush(key, storage.Replica{
+		Role: "user",
+		Content: `Your task in this chat will be to generate 3 new startup ideas everytime I ask you to do it with a phrase "Generate new startup ideas",
+startup ideas should be not to complex it should be possible to implement them in 1-2 months for 1-2 developers on golang`,
+	}).Err(); err != nil {
+		return fmt.Errorf("redis lpush err: %w", err)
+	}
+	return nil
+}
+
+func (r *redisClient) UnsubscribeChatToStartup(chatID int64) error {
+	key := getStartupSubKey(chatID)
+
+	if err := r.conn.Del(key).Err(); err != nil {
+		return fmt.Errorf("redis del err: %w", err)
+	}
+	return nil
+}
+
+func (r *redisClient) PushStartupNewsletter(chatID int64, replicas []storage.Replica) error {
+	key := getStartupSubKey(chatID)
+	for _, replica := range replicas {
+		if err := r.conn.LPush(key, replica).Err(); err != nil {
+			return fmt.Errorf("redis lpush err: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *redisClient) GetStartupNewsletter(chatID int64) (conversation []storage.Replica, err error) {
+	key := getStartupSubKey(chatID)
+	return r.getReplicasArray(key)
+}
+
+func (r *redisClient) GetAllStartupNewsletters() (newsletterConv map[int64][]storage.Replica, err error) {
+	newsletterConv = make(map[int64][]storage.Replica)
+	iter := r.conn.Scan(0, "sub/startup/*", 0).Iterator()
+	for iter.Next() {
+		chatID, err := strconv.ParseInt(strings.Split(iter.Val(), "/")[2], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse int err: %w", err)
+		}
+
+		newsletter, err := r.GetStartupNewsletter(chatID)
+		if err != nil {
+			return nil, fmt.Errorf("get pull err: %w", err)
+		}
+
+		newsletterConv[chatID] = newsletter
+	}
+
+	return newsletterConv, nil
 }

@@ -157,6 +157,15 @@ func Run(ctx context.Context, args run.Args) error {
 		return nil
 	})
 
+	// Run newsletter monitor
+	server.Go(func() error {
+		defer stop()
+		log.Infof("Newsletter monitor is running")
+
+		botSrv.RunNewsLetter()
+		return nil
+	})
+
 	go graceful.Shutdown(
 		ctx,
 		graceful.TGBOT(botSrv),

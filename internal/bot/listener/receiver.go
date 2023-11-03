@@ -81,6 +81,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "spam":
 				go rcv.cmdSpam(update)
 
+			case command == "sub_to_startup":
+				go rcv.cmdSubToStartupHandler(update)
+			case command == "unsub_to_startup":
+				go rcv.cmdUnsubToStartupHandler(update)
+
 			default:
 				go func() {
 					if err := rcv.SendMessage(
