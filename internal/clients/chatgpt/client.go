@@ -13,9 +13,10 @@ var (
 type Service struct {
 	ai       *openai.Client
 	gptModel string
+	apiKey   string
 }
 
-func NewService(ai *openai.Client, gptModel string) (*Service, error) {
+func NewService(ai *openai.Client, gptModel, apiKey string) (*Service, error) {
 	if err := validateGPTModel(gptModel); err != nil {
 		return nil, err
 	}
@@ -23,6 +24,7 @@ func NewService(ai *openai.Client, gptModel string) (*Service, error) {
 	return &Service{
 		ai:       ai,
 		gptModel: gptModel,
+		apiKey:   apiKey,
 	}, nil
 }
 

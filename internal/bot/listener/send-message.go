@@ -19,6 +19,15 @@ func (rcv *InstaBotService) Reply(chatID int64, messageID int, text string) erro
 	return err
 }
 
+func (rcv *InstaBotService) ReplyAudio(chatID int64, messageID int, audio tgbotapi.AudioConfig) error {
+	message := tgbotapi.NewMessage(chatID, "")
+	message.ReplyToMessageID = messageID
+	message.AllowSendingWithoutReply = true
+
+	_, err := rcv.bot.Send(audio)
+	return err
+}
+
 func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 

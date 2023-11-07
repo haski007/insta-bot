@@ -96,7 +96,7 @@ func Run(ctx context.Context, args run.Args) error {
 
 	// ---> open AI
 	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
-	chatGptSrv, err := chatgpt.NewService(ai, cfg.Clients.OpenAI.GPTModel)
+	chatGptSrv, err := chatgpt.NewService(ai, cfg.Clients.OpenAI.GPTModel, cfg.Clients.OpenAI.ApiKey)
 	if err != nil {
 		return fmt.Errorf("chat gpt service err: %w", err)
 	}

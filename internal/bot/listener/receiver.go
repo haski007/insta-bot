@@ -121,6 +121,8 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.msgChatGPTQuestion(update)
 			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '!' && len([]rune(update.Message.Text)) > 1:
 				go rcv.msgChatGTPConversation(update)
+			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '~' && len([]rune(update.Message.Text)) > 1:
+				go rcv.msgGPTextToSpeech(update)
 			}
 
 		}
