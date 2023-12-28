@@ -89,14 +89,23 @@ func Run(ctx context.Context, args run.Args) error {
 	})
 	defer redCC.Close()
 
-	redisStorage, err := redisWrapper.NewClient(redCC, time.Minute*cfg.Clients.Redis.ConversationTTLMin)
+	redisStorage, err := redisWrapper.NewClient(
+		redCC,
+		time.Minute*cfg.Clients.Redis.ConversationTTLMin,
+		time.Hour*cfg.Clients.Redis.HistoryMessagesTTLHours,
+	)
 	if err != nil {
 		return fmt.Errorf("connect to redis err: %w", err)
 	}
 
 	// ---> open AI
 	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
-	chatGptSrv, err := chatgpt.NewService(ai, cfg.Clients.OpenAI.GPTModel, cfg.Clients.OpenAI.ApiKey)
+	chatGptSrv, err := chatgpt.NewService(
+		ai,
+		cfg.Clients.OpenAI.GPTModelForConv,
+		cfg.Clients.OpenAI.GPTModelForHistory,
+		cfg.Clients.OpenAI.ApiKey,
+	)
 	if err != nil {
 		return fmt.Errorf("chat gpt service err: %w", err)
 	}

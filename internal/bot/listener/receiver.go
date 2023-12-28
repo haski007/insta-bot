@@ -86,6 +86,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "unsub_to_startup":
 				go rcv.cmdUnsubToStartupHandler(update)
 
+			case command == "sum":
+				go rcv.cmdSum(update)
+			case command == "purge_history":
+				go rcv.cmdPurgeHistory(update)
+
 			default:
 				go func() {
 					if err := rcv.SendMessage(
@@ -123,8 +128,11 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.msgChatGTPConversation(update)
 			case len([]rune(update.Message.Text)) > 0 && []rune(update.Message.Text)[0] == '~' && len([]rune(update.Message.Text)) > 1:
 				go rcv.msgGPTextToSpeech(update)
+
 			}
 
+			// ---> save to history
+			go rcv.msgSaveToHistory(update)
 		}
 	}
 

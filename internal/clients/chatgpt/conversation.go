@@ -9,7 +9,7 @@ import (
 
 func (srv *Service) Conversation(ctx context.Context, promptWithHistory []openai.ChatCompletionMessage) (string, error) {
 	res, err := srv.ai.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:    srv.gptModel,
+		Model:    srv.convGPTModel,
 		Messages: promptWithHistory,
 	})
 	if err != nil {

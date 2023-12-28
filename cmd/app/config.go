@@ -26,14 +26,16 @@ type GoogleConfig struct {
 }
 
 type OpenAIConfig struct {
-	ApiKey   string `yaml:"api_key"`
-	GPTModel string `yaml:"gpt_model"`
+	ApiKey             string `yaml:"api_key"`
+	GPTModelForConv    string `yaml:"gpt_model_for_conv"`
+	GPTModelForHistory string `yaml:"gpt_model_for_history"`
 }
 
 type RedisClient struct {
-	Addr               string        `yaml:"addr"`
-	Pass               string        `yaml:"pass"`
-	ConversationTTLMin time.Duration `yaml:"conversation_ttl_min"`
+	Addr                    string        `yaml:"addr"`
+	Pass                    string        `yaml:"pass"`
+	ConversationTTLMin      time.Duration `yaml:"conversation_ttl_min"`
+	HistoryMessagesTTLHours time.Duration `yaml:"history_messages_ttl_hours"`
 }
 
 type YouTubeConfig struct {

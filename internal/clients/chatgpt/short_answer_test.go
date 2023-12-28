@@ -16,7 +16,7 @@ func TestService_GetShortAnswer(t *testing.T) {
 	}
 
 	ai := openai.NewClient(key)
-	srv, err := NewService(ai, "gpt3-dot-5-turbo", key)
+	srv, err := NewService(ai, "gpt3-dot-5-turbo", "gpt-4", key)
 	if err != nil {
 		t.Error(err)
 	}
