@@ -7,7 +7,7 @@ services:
       - REDIS_REPLICATION_MODE=master
       - REDIS_PASSWORD=zakEfron1
     ports:
-      - "6379:6379"
+      - "6381:6379"
     volumes:
       - redis-data:/data
 

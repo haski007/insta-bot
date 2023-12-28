@@ -8,6 +8,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.3.0
+	github.com/haski007/pretty v0.0.0-20210902161444-e38ffafc4f95
 	github.com/kkdai/youtube/v2 v2.7.18
 	github.com/prometheus/client_golang v1.13.0
 	github.com/sashabaranov/go-openai v1.16.1
@@ -38,7 +39,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
-	github.com/haski007/pretty v0.0.0-20210902161444-e38ffafc4f95 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect

@@ -40,6 +40,11 @@ type Storage interface {
 	GetStartupNewsletter(chatID int64) (conversation []Replica, err error)
 	GetAllStartupNewsletters() (newsletterConv map[int64][]Replica, err error)
 
+	// summarize messages
+	SaveMessage(chatID int64, messageID int, message string) error
+	GetMessages(chatID int64, count int) (messages []string, err error)
+	PurgeHistory(chatID int64) error
+
 	IsReadOnly() (bool, error)
 }
 

@@ -20,6 +20,8 @@ For the best user experience give me please administrator rights ` + emoji.FaceW
 		"you can use such commands for creating csgo polls:\n" +
 		"/reg\\_csgo\\_players {username\\_1} {username\\_2} ... - to register users that will be tagged before poll to play CS GO\n" +
 		"/purge\\_csgo\\_players - to delete all csgo players at this chat\n" +
-		"/lets\\_play - to offer to play CS GO (creates poll to vote)\n"
+		"/lets\\_play - to offer to play CS GO (creates poll to vote)\n" +
+		"/sum {count} - to summarize last {count} messages\n" +
+		"/purge\\_history - to delete all messages from this chat history\n"
 	return rcv.SendMessage(chatID, message)
 }

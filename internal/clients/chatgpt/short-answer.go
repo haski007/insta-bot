@@ -23,7 +23,7 @@ just add to the answer that your are not sure.
 Question: %s", question)`, QuestionDelimiter+question+QuestionDelimiter)
 
 	res, err := srv.ai.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: srv.gptModel,
+		Model: srv.convGPTModel,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
