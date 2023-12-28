@@ -19,7 +19,7 @@ func (rcv *InstaBotService) cmdSum(update tgbotapi.Update) {
 	}
 
 	countOfLastMessages, err := strconv.Atoi(args[0])
-	if err != nil {
+	if err != nil || countOfLastMessages < 1 {
 		rcv.SendError(chatID, ErrWrongFormat)
 		return
 	}
