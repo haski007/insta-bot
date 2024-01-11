@@ -4,6 +4,8 @@ const (
 	InstagramBaseUrl        = "https://www.instagram.com/"
 	InstagramStoriesBaseUrl = "https://instagram.com/"
 
+	TwitterBaseUrl = "https://x.com/"
+
 	TikTokBaseUrl      = "https://www.tiktok.com/"
 	TikTokShareBaseUrl = "https://vm.tiktok.com/"
 
