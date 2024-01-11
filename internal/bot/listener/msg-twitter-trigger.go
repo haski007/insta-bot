@@ -14,7 +14,7 @@ func (rcv *InstaBotService) msgTwitterTrigger(update tgbotapi.Update) {
 
 	url = strings.ReplaceAll(url, "https://x.com/", "https://vxtwitter.com/")
 
-	if err := rcv.SendMessage(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
 		rcv.log.WithError(err).Error("[msgTwitterTrigger] send message caption")
 		return
 	}

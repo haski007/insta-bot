@@ -25,7 +25,7 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 
 	url = strings.ReplaceAll(url, "https://www.instagram.com", "https://www.ddinstagram.com")
 
-	if err := rcv.SendMessage(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
 		rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
 		return
 	}
