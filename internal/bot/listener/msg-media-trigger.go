@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/haski007/insta-bot/internal/bot/model"
 	"github.com/haski007/insta-bot/pkg/file"
-	"github.com/haski007/insta-bot/pkg/text"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (
@@ -19,62 +18,74 @@ const (
 
 var exprFindURL = regexp.MustCompile(`https?://[^\s]+`)
 
-func (rcv *InstaBotService) msgMediaTrigger(update tgbotapi.Update) {
+func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
 
-	content, err := rcv.instapi.GetPostContent(url)
-	if err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] get post content")
-		rcv.SendError(chatID, ErrInternalServerError)
-		return
-	}
+	url = strings.ReplaceAll(url, "https://www.instagram.com", "https://www.ddinstagram.com")
 
-	// ---> download videos and photos
-	videosBytes, err := downloadAndGetVideoFilesBytes(content.Video)
-	if err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] download videos")
-		rcv.SendError(chatID, ErrInternalServerError)
-		return
-	}
-
-	imagesBytes, err := downloadAndGetImageFilesBytes(content.Image)
-	if err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] download images")
-		rcv.SendError(chatID, ErrInternalServerError)
-		return
-	}
-
-	downloadedFilesBytes := append(videosBytes, imagesBytes...)
-
-	mdg := tgbotapi.NewMediaGroup(chatID, downloadedFilesBytes)
-	if _, err := rcv.bot.SendMediaGroup(mdg); err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] send media group")
-		return
-	}
-
-	content.ArticleBody = escapeMarkdown(content.ArticleBody)
-	content.Author.Name = escapeMarkdown(content.Author.Name)
-	content.Author.Identifier.Value = escapeMarkdown(content.Author.Identifier.Value)
-
-	var message = fmt.Sprintf("Instagram post  from author: [%s](%s)\n\n"+
-		"Description: %s\n\n"+
-		"source: [instagram](%s)\n\n"+
-		"shared by: @%s %s",
-		content.Author.Name,
-		content.Author.GetProfileURL(),
-		text.CharLimiterToWord(content.ArticleBody, rcv.captionCharsLimit),
-		url,
-		update.Message.From.UserName, update.Message.From.FirstName+" "+update.Message.From.LastName)
-	if err := rcv.SendMessage(chatID, message); err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] send message caption")
+	if err := rcv.SendMessage(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
 		return
 	}
 
 	if err := rcv.DeleteMessage(chatID, messageID); err != nil {
-		rcv.log.WithError(err).Error("[msgMediaTrigger] delete message")
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] delete message")
+		return
 	}
+
+	//content, err := rcv.instapi.GetPostContent(url)
+	//if err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] get post content")
+	//	rcv.SendError(chatID, ErrInternalServerError)
+	//	return
+	//}
+	//
+	//// ---> download videos and photos
+	//videosBytes, err := downloadAndGetVideoFilesBytes(content.Video)
+	//if err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] download videos")
+	//	rcv.SendError(chatID, ErrInternalServerError)
+	//	return
+	//}
+	//
+	//imagesBytes, err := downloadAndGetImageFilesBytes(content.Image)
+	//if err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] download images")
+	//	rcv.SendError(chatID, ErrInternalServerError)
+	//	return
+	//}
+	//
+	//downloadedFilesBytes := append(videosBytes, imagesBytes...)
+	//
+	//mdg := tgbotapi.NewMediaGroup(chatID, downloadedFilesBytes)
+	//if _, err := rcv.bot.SendMediaGroup(mdg); err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] send media group")
+	//	return
+	//}
+	//
+	//content.ArticleBody = escapeMarkdown(content.ArticleBody)
+	//content.Author.Name = escapeMarkdown(content.Author.Name)
+	//content.Author.Identifier.Value = escapeMarkdown(content.Author.Identifier.Value)
+	//
+	//var message = fmt.Sprintf("Instagram post  from author: [%s](%s)\n\n"+
+	//	"Description: %s\n\n"+
+	//	"source: [instagram](%s)\n\n"+
+	//	"shared by: @%s %s",
+	//	content.Author.Name,
+	//	content.Author.GetProfileURL(),
+	//	text.CharLimiterToWord(content.ArticleBody, rcv.captionCharsLimit),
+	//	url,
+	//	update.Message.From.UserName, update.Message.From.FirstName+" "+update.Message.From.LastName)
+	//if err := rcv.SendMessage(chatID, message); err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
+	//	return
+	//}
+	//
+	//if err := rcv.DeleteMessage(chatID, messageID); err != nil {
+	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] delete message")
+	//}
 }
 
 func downloadAndGetVideoFilesBytes(videos []*model.Video) ([]interface{}, error) {
@@ -91,7 +102,7 @@ func downloadAndGetVideoFilesBytes(videos []*model.Video) ([]interface{}, error)
 		}
 
 		if err := file.DeleteFile(filePath); err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] image delete file err: %w", err)
+			return nil, fmt.Errorf("[msgInstagramTrigger] image delete file err: %w", err)
 		}
 
 		downloadedFilesBytes = append(downloadedFilesBytes, tgbotapi.NewInputMediaVideo(fileBytes))
@@ -113,7 +124,7 @@ func downloadAndGetImageFilesBytes(videos []*model.Image) ([]interface{}, error)
 		}
 
 		if err := file.DeleteFile(filePath); err != nil {
-			return nil, fmt.Errorf("[msgMediaTrigger] image delete file err: %w", err)
+			return nil, fmt.Errorf("[msgInstagramTrigger] image delete file err: %w", err)
 		}
 
 		downloadedFilesBytes = append(downloadedFilesBytes, tgbotapi.NewInputMediaPhoto(fileBytes))
