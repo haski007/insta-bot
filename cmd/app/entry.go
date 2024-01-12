@@ -1,14 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
@@ -20,6 +19,7 @@ import (
 	"github.com/haski007/insta-bot/pkg/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sashabaranov/go-openai"
+	"github.com/sethvargo/go-envconfig"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
@@ -38,15 +38,12 @@ func Run(ctx context.Context, args run.Args) error {
 	log.SetFormatter(&logrus.JSONFormatter{})
 
 	var cfg Config
-	if err := Load(args.ConfigFile, &cfg); err != nil {
-		return fmt.Errorf("load config %s err: %w", args.ConfigFile, err)
+	if err := envconfig.Process(ctx, &cfg); err != nil {
+		return fmt.Errorf("load config from env err: %w", err)
 	}
 
 	// ---> Google AUTH
-	b, err := os.ReadFile(cfg.Clients.Google.CredentialsPath)
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
+	b := bytes.NewBufferString(cfg.Clients.Google.Credentials).Bytes()
 
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b,
@@ -78,7 +75,7 @@ func Run(ctx context.Context, args run.Args) error {
 	}
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = cfg.TelegramBot.UpdatesTimeoutSec
+	u.Timeout = int(cfg.TelegramBot.UpdatesTimeout.Seconds())
 	chUpdates := botApi.GetUpdatesChan(u)
 
 	apiCli := instapi.New()
@@ -91,8 +88,8 @@ func Run(ctx context.Context, args run.Args) error {
 
 	redisStorage, err := redisWrapper.NewClient(
 		redCC,
-		time.Minute*cfg.Clients.Redis.ConversationTTLMin,
-		time.Hour*cfg.Clients.Redis.HistoryMessagesTTLHours,
+		cfg.Clients.Redis.ConversationTTL,
+		cfg.Clients.Redis.HistoryMessagesTTL,
 	)
 	if err != nil {
 		return fmt.Errorf("connect to redis err: %w", err)
