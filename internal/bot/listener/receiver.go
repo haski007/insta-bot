@@ -6,10 +6,18 @@ import (
 
 	"github.com/haski007/insta-bot/internal/bot/publisher"
 	"github.com/haski007/insta-bot/pkg/emoji"
+	"github.com/haski007/insta-bot/pkg/safego"
 	"github.com/sirupsen/logrus"
 )
 
 func (rcv *InstaBotService) StartPool() error {
+	defer func() {
+		if err := recover(); err != nil {
+			rcv.log.WithError(fmt.Errorf("%s", err)).Error("[Pooling] panic")
+			rcv.NotifyCreator(fmt.Sprintf("[Pooling] panic: %s", err))
+			return
+		}
+	}()
 	me, err := rcv.bot.GetMe()
 	if err != nil {
 		_ = rcv.NotifyCreator(fmt.Sprintf("[bot GetMe] err: %s", err))
@@ -87,7 +95,13 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.cmdUnsubToStartupHandler(update)
 
 			case command == "sum":
-				go rcv.cmdSum(update)
+				safego.New(func() {
+					rcv.cmdSum(update)
+				}, func(pErr any) {
+					rcv.log.WithError(fmt.Errorf("%s", pErr)).Error("[cmdSum] panic")
+					rcv.NotifyCreator(fmt.Sprintf("%s cmdSum panic: %s", emoji.NoEntry, pErr))
+					return
+				})
 			case command == "purge_history":
 				go rcv.cmdPurgeHistory(update)
 
