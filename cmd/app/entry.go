@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -21,14 +20,9 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sethvargo/go-envconfig"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	googleWrapper "github.com/haski007/insta-bot/internal/clients/google"
-	calendarWrapper "github.com/haski007/insta-bot/internal/clients/google/calendar"
 	redisWrapper "github.com/haski007/insta-bot/internal/storage/redis"
 )
 
@@ -43,24 +37,24 @@ func Run(ctx context.Context, args run.Args) error {
 	}
 
 	// ---> Google AUTH
-	b := bytes.NewBufferString(cfg.Clients.Google.Credentials).Bytes()
+	//b := bytes.NewBufferString(cfg.Clients.Google.Credentials).Bytes()
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b,
-		calendar.CalendarScope,
-		calendar.CalendarReadonlyScope,
-		calendar.CalendarEventsScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-	gClient, gTokenSource := googleWrapper.GetClient(config)
+	//config, err := google.ConfigFromJSON(b,
+	//	calendar.CalendarScope,
+	//	calendar.CalendarReadonlyScope,
+	//	calendar.CalendarEventsScope)
+	//if err != nil {
+	//	log.Fatalf("Unable to parse client secret file to config: %v", err)
+	//}
+	//gClient, gTokenSource := googleWrapper.GetClient(config)
 
-	gSrv, err := calendar.NewService(ctx, option.WithHTTPClient(gClient))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
-	}
-
-	calendarSrv := calendarWrapper.New(gSrv, gTokenSource, config)
+	//gSrv, err := calendar.NewService(ctx, option.WithHTTPClient(gClient))
+	//if err != nil {
+	//	log.Fatalf("Unable to retrieve Calendar client: %v", err)
+	//}
+	//
+	//calendarSrv := calendarWrapper.New(gSrv, gTokenSource, config)
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
 
@@ -117,7 +111,7 @@ func Run(ctx context.Context, args run.Args) error {
 		tiktokapi.New(),
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
 		redisStorage,
-		calendarSrv,
+		nil,
 		chatGptSrv,
 	).SetLogger(log)
 
