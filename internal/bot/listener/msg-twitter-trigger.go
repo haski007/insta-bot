@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/haski007/insta-bot/internal/bot/publisher"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -12,7 +14,11 @@ func (rcv *InstaBotService) msgTwitterTrigger(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
 
-	url = strings.ReplaceAll(url, "https://x.com/", "https://vxtwitter.com/")
+	if strings.Contains(url, publisher.TwitterBaseUrl) {
+		url = strings.ReplaceAll(url, publisher.TwitterBaseUrl, publisher.VXTwitterBaseUrl)
+	} else if strings.Contains(url, publisher.TwitterOLDBaseUrl) {
+		url = strings.ReplaceAll(url, publisher.TwitterOLDBaseUrl, publisher.VXTwitterBaseUrl)
+	}
 
 	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
 		rcv.log.WithError(err).Error("[msgTwitterTrigger] send message caption")
