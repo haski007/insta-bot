@@ -30,6 +30,28 @@ jobs:
           push: true
           tags: haski007/insta-bot:${{ github.ref_name }}
 
-      - name: Run Docker Compose
+
+      - name: Deploy to Digital Ocean
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.DO_HOST }}
+          PASS: ${{ secrets.DO_PASSKEY }}
+          # Add any other environment variables if needed
         run: |
-          docker-compose -f docker-compose.yml up --build -d
+          # Install SSH client
+          sudo apt-get update
+          sudo apt-get install -y openssh-client
+          
+          # Start SSH agent and add key
+          eval "$(ssh-agent -s)"
+          echo "$SSH_PRIVATE_KEY" | ssh-add -
+          
+          # Disable host key checking (for automation)
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+          # SSH into the Digital Ocean server and pull the latest image and restart services
+          ssh -o 'StrictHostKeyChecking=no' root@$HOST << 'ENDSSH'
+            cd /path/to/your/app
+            docker-compose pull
+            docker-compose up -d
+          ENDSSH
