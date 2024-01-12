@@ -40,7 +40,7 @@ jobs:
           PASS: ${{ secrets.DO_PASSKEY }}
           # Add any other environment variables if needed
         run: |
-          # Install SSH client
+          # Install SSH client (if not already installed)
           sudo apt-get update
           sudo apt-get install -y openssh-client
           
@@ -48,10 +48,16 @@ jobs:
           eval "$(ssh-agent -s)"
           echo "$SSH_PRIVATE_KEY" | ssh-add -
           
-          # Disable host key checking (for automation)
+          # Create .ssh directory and known_hosts file
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          chmod 644 ~/.ssh/known_hosts
+          
+          # Add the host key to known_hosts
           ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
-
-          # SSH into the Digital Ocean server and pull the latest image and restart services
+          
+          # SSH into the Digital Ocean server and run deployment commands
           ssh -o 'StrictHostKeyChecking=no' root@$HOST << 'ENDSSH'
             cd /path/to/your/app
             docker-compose pull
