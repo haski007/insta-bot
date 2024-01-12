@@ -59,7 +59,7 @@ jobs:
           
           # SSH into the Digital Ocean server and run deployment commands
           ssh -o 'StrictHostKeyChecking=no' root@$HOST << 'ENDSSH'
-            cd /path/to/your/app
+            cd /root/go/src/haski007/insta-bot
             docker-compose pull
             docker-compose up -d
           ENDSSH
