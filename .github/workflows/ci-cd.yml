@@ -38,6 +38,19 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.DO_HOST }}
           PASS: ${{ secrets.DO_PASSKEY }}
+          REDIS_PASS: ${{ secrets.REDIS_PASS}"
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS}"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY}"
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN}"
+          REDIS_ADDR: ${{ vars.BOT_CREATOR_USER_ID }}
+          REDIS_CONVERSATION_TTL: ${{ vars.REDIS_CONVERSATION_TTL }}
+          REDIS_HISTORY_MESSAGES_TTL: ${{ vars.REDIS_HISTORY_MESSAGES_TTL }}
+          OPENAI_GPT_MODEL_FOR_CONV: ${{ vars.OPENAI_GPT_MODEL_FOR_CONV }}
+          OPENAI_GPT_MODEL_FOR_HISTORY: ${{ vars.OPENAI_GPT_MODEL_FOR_HISTORY }}
+          BOT_CREATOR_USER_ID: ${{ vars.BOT_CREATOR_USER_ID }}
+          BOT_UPDATES_TIMEOUT: ${{ vars.BOT_UPDATES_TIMEOUT }}
+          CAPTION_CHARS_LIMIT: ${{ vars.CAPTION_CHARS_LIMIT }}
+
           # Add any other environment variables if needed
         run: |
           # Install SSH client (if not already installed)
