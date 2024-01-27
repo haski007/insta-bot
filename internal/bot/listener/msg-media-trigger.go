@@ -18,10 +18,19 @@ const (
 
 var exprFindURL = regexp.MustCompile(`https?://[^\s]+`)
 
+const (
+	postSubstring = "/p/"
+	reelSubstring = "/reel/"
+)
+
 func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
+
+	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
+		return
+	}
 
 	url = strings.ReplaceAll(url, "https://www.instagram.com", "https://www.ddinstagram.com")
 
