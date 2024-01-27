@@ -25,7 +25,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		logrus.Panicln(err)
+		logrus.WithError(err).Fatalln("app run")
 	}
 }
 
@@ -50,7 +50,7 @@ func flags() []cli.Flag {
 		&cli.StringFlag{
 			Name:     "config",
 			Aliases:  []string{"c"},
-			Required: true,
+			Required: false,
 			EnvVars:  []string{"CONFIG_PATH"},
 		},
 	}
