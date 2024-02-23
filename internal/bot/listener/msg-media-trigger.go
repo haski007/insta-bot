@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/haski007/insta-bot/internal/bot/model"
 	"github.com/haski007/insta-bot/pkg/file"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (

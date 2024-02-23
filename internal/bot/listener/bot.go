@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	CSGOContext = "csgo"
-	PUBGContext = "pubg"
+	CSGOContext   = "csgo"
+	PUBGContext   = "pubg"
+	FinalsContext = "finals"
 
 	PollContext  = "poll"
 	UsersContext = "users"

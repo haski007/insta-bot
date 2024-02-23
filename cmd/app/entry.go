@@ -74,7 +74,7 @@ func Run(ctx context.Context, args run.Args) error {
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
 	if err != nil {
-		return fmt.Errorf("new tg bot api err: %w", err)
+		return fmt.Errorf("new tg bot api token: [%s] err: %w", cfg.TelegramBot.Token, err)
 	}
 
 	u := tgbotapi.NewUpdate(0)

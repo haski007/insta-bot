@@ -69,13 +69,21 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "lets_play":
 				go rcv.cmdLetsPlayHandler(update)
 
-			// CSGO addon ^)
+			// PUBG addon ^)
 			case command == "reg_pubg_players":
 				go rcv.cmdRegPUBGPlayersHandler(update)
 			case command == "purge_pubg_players":
 				go rcv.cmdPurgePUBGPlayersHandler(update)
 			case command == "lets_play_pubg":
 				go rcv.cmdLetsPlayPUBGHandler(update)
+
+			// Finals addon ^)
+			case command == "reg_finals_players":
+				go rcv.cmdRegFinalsPlayersHandler(update)
+			case command == "purge_finals_players":
+				go rcv.cmdPurgeFinalsPlayersHandler(update)
+			case command == "lets_play_finals":
+				go rcv.cmdLetsPlayFinalsHandler(update)
 
 			// Users
 			case command == "set_email":
