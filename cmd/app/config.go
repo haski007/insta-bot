@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/haski007/insta-bot/pkg/factory"
-	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
@@ -22,43 +19,22 @@ type Config struct {
 }
 
 type GoogleConfig struct {
-	CredentialsPath string `yaml:"credentials_path"`
+	Credentials string `yaml:"credentials_path" env:"GOOGLE_CREDENTIALS"`
 }
 
 type OpenAIConfig struct {
-	ApiKey             string `yaml:"api_key"`
-	GPTModelForConv    string `yaml:"gpt_model_for_conv"`
-	GPTModelForHistory string `yaml:"gpt_model_for_history"`
+	ApiKey             string `yaml:"api_key" env:"OPENAI_API_KEY"`
+	GPTModelForConv    string `yaml:"gpt_model_for_conv" env:"OPENAI_GPT_MODEL_FOR_CONV"`
+	GPTModelForHistory string `yaml:"gpt_model_for_history" env:"OPENAI_GPT_MODEL_FOR_HISTORY"`
 }
 
 type RedisClient struct {
-	Addr                    string        `yaml:"addr"`
-	Pass                    string        `yaml:"pass"`
-	ConversationTTLMin      time.Duration `yaml:"conversation_ttl_min"`
-	HistoryMessagesTTLHours time.Duration `yaml:"history_messages_ttl_hours"`
+	Addr               string        `yaml:"addr" env:"REDIS_ADDR"`
+	Pass               string        `yaml:"pass" env:"REDIS_PASS"`
+	ConversationTTL    time.Duration `yaml:"conversation_ttl_min" env:"REDIS_CONVERSATION_TTL"`
+	HistoryMessagesTTL time.Duration `yaml:"history_messages_ttl_hours" env:"REDIS_HISTORY_MESSAGES_TTL"`
 }
 
 type YouTubeConfig struct {
 	MaxQuality int `yaml:"max_quality"`
-}
-
-func Load(configFile string, cfg interface{}) error {
-	fileData, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("can't read config file: %w", err)
-	}
-
-	fileData = []byte(os.ExpandEnv(string(fileData)))
-
-	if err = yaml.Unmarshal(fileData, cfg); err != nil {
-		return fmt.Errorf("can't unmarshal config data: %w", err)
-	}
-
-	if v, ok := cfg.(interface{ Validate() error }); ok {
-		if err = v.Validate(); err != nil {
-			return fmt.Errorf("invalid config: %w", err)
-		}
-	}
-
-	return nil
 }
