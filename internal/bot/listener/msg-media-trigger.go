@@ -28,6 +28,7 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
+	originalURL := url
 
 	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
 		return
@@ -35,7 +36,7 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 
 	url = strings.ReplaceAll(url, "https://www.instagram.com", "https://www.ddinstagram.com")
 
-	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\noriginal url: %s\n\nurl: %s", update.Message.From.UserName, originalURL, url)); err != nil {
 		rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
 		return
 	}
