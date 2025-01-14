@@ -14,10 +14,12 @@ func (rcv *InstaBotService) msgTwitterTrigger(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
 
-	if strings.Contains(url, publisher.TwitterBaseUrl) {
-		url = strings.ReplaceAll(url, publisher.TwitterBaseUrl, publisher.VXTwitterBaseUrl)
-	} else if strings.Contains(url, publisher.TwitterOLDBaseUrl) {
-		url = strings.ReplaceAll(url, publisher.TwitterOLDBaseUrl, publisher.VXTwitterBaseUrl)
+	if strings.Contains(url, "/status/") {
+		if strings.Contains(url, publisher.TwitterBaseUrl) {
+			url = strings.ReplaceAll(url, publisher.TwitterBaseUrl, publisher.VXTwitterBaseUrl)
+		} else if strings.Contains(url, publisher.TwitterOLDBaseUrl) {
+			url = strings.ReplaceAll(url, publisher.TwitterOLDBaseUrl, publisher.VXTwitterBaseUrl)
+		}
 	}
 
 	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
