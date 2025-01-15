@@ -20,6 +20,8 @@ func (rcv *InstaBotService) msgTwitterTrigger(update tgbotapi.Update) {
 		} else if strings.Contains(url, publisher.TwitterOLDBaseUrl) {
 			url = strings.ReplaceAll(url, publisher.TwitterOLDBaseUrl, publisher.VXTwitterBaseUrl)
 		}
+	} else {
+		return
 	}
 
 	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\n\nurl: %s", update.Message.From.UserName, url)); err != nil {
