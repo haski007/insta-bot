@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -12,7 +11,7 @@ import (
 func (rcv *InstaBotService) cmdSum(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 
-	args := strings.Fields(update.Message.CommandArguments())
+	args := rcv.parseCommandArgs(update.Message.Text)
 	if len(args) == 0 {
 		rcv.SendError(chatID, ErrNoArguments)
 		return

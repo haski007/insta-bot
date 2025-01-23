@@ -36,15 +36,19 @@ func (r *redisClient) SaveMessage(chatID int64, messageID int, message string) e
 }
 
 func (r *redisClient) GetMessages(chatID int64, count int) (messages []string, err error) {
-	messagesKeys, err := r.conn.ZRange(getHistoryIndexKey(chatID), 0, int64(count-1)).Result()
+	messagesKeys, err := r.conn.ZRevRange(getHistoryIndexKey(chatID), 0, int64(count-1)).Result()
 	if err != nil {
-		return nil, fmt.Errorf("redis zrange err: %w", err)
+		return nil, fmt.Errorf("redis zrevrange err: %w", err)
 	}
+	// reverse messagesKeys
+	for i, j := 0, len(messagesKeys)-1; i < j; i, j = i+1, j-1 {
+		messagesKeys[i], messagesKeys[j] = messagesKeys[j], messagesKeys[i]
+	}
+
 	res, err := r.conn.MGet(messagesKeys...).Result()
 	if err != nil {
 		return nil, fmt.Errorf("redis mget err: %w", err)
 	}
-
 	messages = make([]string, 0, len(res))
 	for _, v := range res {
 		messages = append(messages, v.(string))
