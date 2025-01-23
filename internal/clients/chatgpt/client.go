@@ -37,7 +37,7 @@ func NewService(
 
 func validateGPTModels(model ...string) error {
 	for _, m := range model {
-		if m != openai.GPT3Dot5Turbo && m != openai.GPT4 {
+		if m != openai.GPT3Dot5Turbo && m != openai.GPT4o {
 			return ErrInvalidGPTModel
 		}
 	}

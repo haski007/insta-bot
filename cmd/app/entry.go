@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -21,14 +20,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	googleWrapper "github.com/haski007/insta-bot/internal/clients/google"
-	calendarWrapper "github.com/haski007/insta-bot/internal/clients/google/calendar"
 	redisWrapper "github.com/haski007/insta-bot/internal/storage/redis"
 )
 
@@ -43,27 +37,27 @@ func Run(ctx context.Context, args run.Args) error {
 	}
 
 	// ---> Google AUTH
-	b, err := os.ReadFile(cfg.Clients.Google.CredentialsPath)
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
+	// b, err := os.ReadFile(cfg.Clients.Google.CredentialsPath)
+	// if err != nil {
+	// 	log.Fatalf("Unable to read client secret file: %v", err)
+	// }
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b,
-		calendar.CalendarScope,
-		calendar.CalendarReadonlyScope,
-		calendar.CalendarEventsScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-	gClient, gTokenSource := googleWrapper.GetClient(config)
+	// config, err := google.ConfigFromJSON(b,
+	// 	calendar.CalendarScope,
+	// 	calendar.CalendarReadonlyScope,
+	// 	calendar.CalendarEventsScope)
+	// if err != nil {
+	// 	log.Fatalf("Unable to parse client secret file to config: %v", err)
+	// }
+	// gClient, gTokenSource := googleWrapper.GetClient(config)
 
-	gSrv, err := calendar.NewService(ctx, option.WithHTTPClient(gClient))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
-	}
+	// gSrv, err := calendar.NewService(ctx, option.WithHTTPClient(gClient))
+	// if err != nil {
+	// 	log.Fatalf("Unable to retrieve Calendar client: %v", err)
+	// }
 
-	calendarSrv := calendarWrapper.New(gSrv, gTokenSource, config)
+	// calendarSrv := calendarWrapper.New(gSrv, gTokenSource, config)
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
 
@@ -120,7 +114,7 @@ func Run(ctx context.Context, args run.Args) error {
 		tiktokapi.New(),
 		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
 		redisStorage,
-		calendarSrv,
+		nil,
 		chatGptSrv,
 	).SetLogger(log)
 

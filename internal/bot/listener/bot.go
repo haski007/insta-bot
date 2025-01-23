@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/haski007/insta-bot/internal/clients/instapi"
@@ -42,6 +43,9 @@ type InstaBotService struct {
 	log               logrus.FieldLogger
 
 	ctx context.Context
+
+	// map[chat_id_to_stream][]chat_id_where_to_stream
+	streamChats sync.Map
 }
 
 func NewInstaBotService(

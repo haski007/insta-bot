@@ -38,12 +38,21 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.MyChatMember != nil &&
 			update.MyChatMember.NewChatMember.User.ID == me.ID {
 			go func() {
-				if err := rcv.sendStartInfo(update.MyChatMember.Chat.ID); err != nil {
+				if err := rcv.sendStartInfo(update); err != nil {
 					rcv.log.WithError(err).Println("[new chat member update] send start info")
 				}
 			}()
+
 			continue
 		}
+
+		// if it's any type of media but the caption contains command /w
+		if update.Message.Command() == "w" || strings.HasPrefix(update.Message.Caption, "/w") {
+			go rcv.cmdWriteToChat(update)
+			continue
+		}
+
+		go rcv.streamMessageToChats(update.Message)
 
 		// ---> Commands
 		if update.Message != nil && update.Message.IsCommand() {
@@ -112,6 +121,13 @@ func (rcv *InstaBotService) StartPool() error {
 				})
 			case command == "purge_history":
 				go rcv.cmdPurgeHistory(update)
+
+			case command == "stream_chat":
+				go rcv.cmdStreamChat(update)
+			case command == "stop_stream_chat":
+				go rcv.cmdStopStreamChat(update)
+			case command == "get_streams":
+				go rcv.cmdGetStreamingChats(update)
 
 			default:
 				go func() {

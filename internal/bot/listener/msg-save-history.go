@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sirupsen/logrus"
 )
 
 func (rcv *InstaBotService) msgSaveToHistory(update tgbotapi.Update) {
@@ -11,6 +12,10 @@ func (rcv *InstaBotService) msgSaveToHistory(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 	username := update.Message.From.UserName
 	text := update.Message.Text
+
+	if !update.Message.From.IsBot {
+		logrus.WithField("text", text).WithField("chatID", chatID).WithField("from", username).Info("message was sent")
+	}
 
 	var fromBlock string
 	if update.Message.ForwardFrom != nil {

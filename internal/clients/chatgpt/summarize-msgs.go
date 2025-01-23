@@ -11,7 +11,7 @@ import (
 // SummarizeMessages handles messages larger than 4096 tokens.
 func (srv *Service) SummarizeMessages(ctx context.Context, messages []string) (string, error) {
 	// Assume maxTokens is the maximum number of tokens allowed in a single request.
-	const maxTokens = 4096
+	const maxTokens = 4096 * 2
 
 	// Split messages into chunks that fit within the token limit.
 	messageChunks := splitMessagesByTokens(messages, maxTokens)
@@ -21,9 +21,9 @@ func (srv *Service) SummarizeMessages(ctx context.Context, messages []string) (s
 	for i, chunk := range messageChunks {
 		var prompt string
 		if i == 0 {
-			prompt += `Hello GPT, I will be providing you with a series of messages in chunks, each containing part of an ongoing conversation. These messages are segments of a larger discussion, and I'll send them to you sequentially. After I have sent all the chunks, I will indicate the end of the input by sending a specific final message saying "End of conversation."
-Once you receive the "End of conversation" message, please provide a comprehensive but short summary of the entire conversation. In your summary, include the key points discussed, any conclusions reached, and the main themes or topics covered. Your summary should capture the essence of the conversation and present it in a clear, concise manner. Your answer should be on language that mostly used in passed messages (Ukrainian).
-Here's the first chunk of the conversation:
+			prompt += `Привіт GPT, я надаватиму тобі серію повідомлень частинами, кожна з яких містить частину поточної розмови. Ці повідомлення є сегментами більшої дискусії, і я надсилатиму їх послідовно. Після того, як я надішлю всі частини, я вкажу на кінець вводу, надіславши спеціальне фінальне повідомлення "End of conversation."
+Коли ти отримаєш повідомлення "End of conversation", будь ласка, надай короткий але вичерпний підсумок всієї розмови. У своєму підсумку включи ключові обговорені моменти, будь-які досягнуті висновки та основні теми. Твій підсумок повинен охопити суть розмови та представити її чітко та лаконічно. Твоя відповідь має бути мовою, яка переважно використовувалась у переданих повідомленнях (українською).
+Ось перша частина розмови:
 `
 		}
 		prompt += strings.Join(chunk, "\n")

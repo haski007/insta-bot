@@ -9,3 +9,5 @@ vendor/
 resources/*
 
 config/local.yaml
+
+result.txt
