@@ -14,7 +14,11 @@ func (rcv *InstaBotService) msgSaveToHistory(update tgbotapi.Update) {
 	text := update.Message.Text
 
 	if !update.Message.From.IsBot {
-		logrus.WithField("text", text).WithField("chatID", chatID).WithField("from", username).Info("message was sent")
+		logrus.WithField("text", text).
+			WithField("chatID", chatID).
+			WithField("chat_title", update.Message.Chat.Title).
+			WithField("from", username).
+			Info("message was sent")
 	}
 
 	var fromBlock string
