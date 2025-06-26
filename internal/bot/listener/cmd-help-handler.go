@@ -20,7 +20,7 @@ func (rcv *InstaBotService) sendStartInfo(update tgbotapi.Update) error {
 	message := `Нащо ви мене знову розбудили ?! 😡`
 
 	var chatID int64
-	var chatTitle string
+	var chatTitle string	
 
 	// Try to get chat info from MyChatMember first
 	if update.MyChatMember != nil {
