@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -23,6 +24,11 @@ func (rcv *InstaBotService) cmdSum(update tgbotapi.Update) {
 		return
 	}
 
+	var question string
+	if len(args) > 1 {
+		question = strings.Join(args[1:], " ")
+	}
+
 	messages, err := rcv.storage.GetMessages(chatID, countOfLastMessages)
 	if err != nil {
 		rcv.SendError(chatID, ErrInternalServerError)
@@ -30,7 +36,7 @@ func (rcv *InstaBotService) cmdSum(update tgbotapi.Update) {
 		return
 	}
 
-	summarized, err := rcv.gpt.SummarizeMessages(context.Background(), messages)
+	summarized, err := rcv.gpt.SummarizeMessages(context.Background(), messages, question)
 	if err != nil {
 		rcv.SendError(chatID, ErrInternalServerError)
 		rcv.log.WithError(err).Error("[cmdSum] summarize messages")

@@ -9,7 +9,7 @@ import (
 )
 
 // SummarizeMessages handles messages larger than 4096 tokens.
-func (srv *Service) SummarizeMessages(ctx context.Context, messages []string) (string, error) {
+func (srv *Service) SummarizeMessages(ctx context.Context, messages []string, question string) (string, error) {
 	// Assume maxTokens is the maximum number of tokens allowed in a single request.
 	const maxTokens = 4096 * 2
 
@@ -21,10 +21,14 @@ func (srv *Service) SummarizeMessages(ctx context.Context, messages []string) (s
 	for i, chunk := range messageChunks {
 		var prompt string
 		if i == 0 {
+
 			prompt += `Привіт GPT, я надаватиму тобі серію повідомлень частинами, кожна з яких містить частину поточної розмови. Ці повідомлення є сегментами більшої дискусії, і я надсилатиму їх послідовно. Після того, як я надішлю всі частини, я вкажу на кінець вводу, надіславши спеціальне фінальне повідомлення "End of conversation."
 Коли ти отримаєш повідомлення "End of conversation", будь ласка, надай короткий але вичерпний підсумок всієї розмови. У своєму підсумку включи ключові обговорені моменти, будь-які досягнуті висновки та основні теми. Твій підсумок повинен охопити суть розмови та представити її чітко та лаконічно. Твоя відповідь має бути мовою, яка переважно використовувалась у переданих повідомленнях (українською).
-Ось перша частина розмови:
 `
+				if question != "" {
+					prompt += fmt.Sprintf("І виходячи з контексту розмови і повідомлень, надай коротку відповідь на питання: %s\n", question)
+				}
+				prompt += "Ось перша частина розмови:\n"
 		}
 		prompt += strings.Join(chunk, "\n")
 
