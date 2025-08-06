@@ -2,6 +2,8 @@ package listener
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -24,79 +26,140 @@ const (
 	reelSubstring = "/reel/"
 )
 
+// extractShortcode extracts the shortcode from Instagram URL
+func extractShortcode(url string) (string, error) {
+	// Remove query parameters
+	if idx := strings.Index(url, "?"); idx != -1 {
+		url = url[:idx]
+	}
+
+	// Remove trailing slash
+	url = strings.TrimSuffix(url, "/")
+
+	// Extract shortcode from /p/SHORTCODE or /reel/SHORTCODE
+	parts := strings.Split(url, "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid Instagram URL format")
+	}
+
+	shortcode := parts[len(parts)-1]
+	if shortcode == "" {
+		return "", fmt.Errorf("no shortcode found in URL")
+	}
+
+	return shortcode, nil
+}
+
+// downloadVideo downloads a video from URL and returns file bytes
+func downloadVideo(videoURL string) (tgbotapi.FileBytes, error) {
+	resp, err := http.Get(videoURL)
+	if err != nil {
+		return tgbotapi.FileBytes{}, fmt.Errorf("download video: %w", err)
+	}
+	defer resp.Body.Close()
+
+	videoBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return tgbotapi.FileBytes{}, fmt.Errorf("read video bytes: %w", err)
+	}
+
+	return tgbotapi.FileBytes{
+		Name:  fmt.Sprintf("video_%d.mp4", time.Now().UnixNano()),
+		Bytes: videoBytes,
+	}, nil
+}
+
+// truncateCaption truncates caption to fit within character limit
+func truncateCaption(caption string, limit int) string {
+	if len(caption) <= limit {
+		return caption
+	}
+
+	// Try to truncate at word boundary
+	words := strings.Fields(caption)
+	result := ""
+	for _, word := range words {
+		if len(result+" "+word) <= limit-3 { // -3 for "..."
+			if result != "" {
+				result += " "
+			}
+			result += word
+		} else {
+			break
+		}
+	}
+
+	if result != caption {
+		result += "..."
+	}
+
+	return result
+}
+
 func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	chatID := update.Message.Chat.ID
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
-	originalURL := url
 
 	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
 		return
 	}
 
-	url = strings.ReplaceAll(url, "https://www.instagram.com", "https://www.ddinstagram.com")
-
-	if err := rcv.SendMessageWithoutMarkdown(chatID, fmt.Sprintf("forwarder: @%s\noriginal url: %s\n\nurl: %s", update.Message.From.UserName, originalURL, url)); err != nil {
-		rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
+	// Extract shortcode from the URL
+	shortcode, err := extractShortcode(url)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] extract shortcode")
+		rcv.SendError(chatID, ErrInternalServerError)
 		return
 	}
 
-	if err := rcv.DeleteMessage(chatID, messageID); err != nil {
-		rcv.log.WithError(err).Error("[msgInstagramTrigger] delete message")
+	// Get post info from Python microservice using the client
+	postInfo, err := rcv.instloaderApi.GetPostInfo(shortcode)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] get post info from microservice")
+		rcv.SendError(chatID, ErrInternalServerError)
 		return
 	}
 
-	//content, err := rcv.instapi.GetPostContent(url)
-	//if err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] get post content")
-	//	rcv.SendError(chatID, ErrInternalServerError)
-	//	return
-	//}
-	//
-	//// ---> download videos and photos
-	//videosBytes, err := downloadAndGetVideoFilesBytes(content.Video)
-	//if err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] download videos")
-	//	rcv.SendError(chatID, ErrInternalServerError)
-	//	return
-	//}
-	//
-	//imagesBytes, err := downloadAndGetImageFilesBytes(content.Image)
-	//if err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] download images")
-	//	rcv.SendError(chatID, ErrInternalServerError)
-	//	return
-	//}
-	//
-	//downloadedFilesBytes := append(videosBytes, imagesBytes...)
-	//
-	//mdg := tgbotapi.NewMediaGroup(chatID, downloadedFilesBytes)
-	//if _, err := rcv.bot.SendMediaGroup(mdg); err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] send media group")
-	//	return
-	//}
-	//
-	//content.ArticleBody = escapeMarkdown(content.ArticleBody)
-	//content.Author.Name = escapeMarkdown(content.Author.Name)
-	//content.Author.Identifier.Value = escapeMarkdown(content.Author.Identifier.Value)
-	//
-	//var message = fmt.Sprintf("Instagram post  from author: [%s](%s)\n\n"+
-	//	"Description: %s\n\n"+
-	//	"source: [instagram](%s)\n\n"+
-	//	"shared by: @%s %s",
-	//	content.Author.Name,
-	//	content.Author.GetProfileURL(),
-	//	text.CharLimiterToWord(content.ArticleBody, rcv.captionCharsLimit),
-	//	url,
-	//	update.Message.From.UserName, update.Message.From.FirstName+" "+update.Message.From.LastName)
-	//if err := rcv.SendMessage(chatID, message); err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] send message caption")
-	//	return
-	//}
-	//
-	//if err := rcv.DeleteMessage(chatID, messageID); err != nil {
-	//	rcv.log.WithError(err).Error("[msgInstagramTrigger] delete message")
-	//}
+	// Send message with post info
+	caption := fmt.Sprintf("❤️ Likes: %d\n%s", postInfo.Likes, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+
+	// Download and send video if it's a video post
+	if postInfo.IsVideo && postInfo.VideoURL != "" {
+		// Download the video
+		videoFile, err := downloadVideo(postInfo.VideoURL)
+		if err != nil {
+			rcv.log.WithError(err).Error("[msgInstagramTrigger] download video")
+			// Fallback to text message if download fails
+			message := fmt.Sprintf("📸 Instagram Video\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+				postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+			if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+				rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
+			}
+			return
+		}
+
+		videoConfig := tgbotapi.NewVideo(chatID, videoFile)
+		videoConfig.Caption = caption
+		videoConfig.ReplyToMessageID = messageID
+
+		if err := rcv.ReplyVideo(chatID, messageID, videoConfig, caption); err != nil {
+			rcv.log.WithError(err).Error("[msgInstagramTrigger] reply video")
+			// Fallback to text message if video fails
+			message := fmt.Sprintf("📸 Instagram Video\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+				postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+			if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+				rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
+			}
+		}
+	} else {
+		// Send text message for non-video posts
+		message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+			postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+		if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+			rcv.log.WithError(err).Error("[msgInstagramTrigger] send message")
+		}
+	}
 }
 
 func downloadAndGetVideoFilesBytes(videos []*model.Video) ([]interface{}, error) {

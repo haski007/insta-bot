@@ -15,7 +15,6 @@ type Args struct {
 
 func (a Args) Validate() error {
 	return validation.ValidateStruct(&a,
-		validation.Field(&a.ConfigFile, validation.Required),
 		validation.Field(&a.MetricsAddr, validation.Required),
 	)
 }

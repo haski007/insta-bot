@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os/signal"
 	"syscall"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
-	"github.com/haski007/insta-bot/internal/clients/instapi"
+	"github.com/haski007/insta-bot/internal/clients/instloader"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/pkg/graceful"
@@ -32,8 +33,8 @@ func Run(ctx context.Context, args run.Args) error {
 	log.SetFormatter(&logrus.JSONFormatter{})
 
 	var cfg Config
-	if err := Load(args.ConfigFile, &cfg); err != nil {
-		return fmt.Errorf("load config %s err: %w", args.ConfigFile, err)
+	if err := Load(&cfg); err != nil {
+		return fmt.Errorf("load config err: %w", err)
 	}
 
 	// ---> Google AUTH
@@ -66,39 +67,44 @@ func Run(ctx context.Context, args run.Args) error {
 
 	metricsServer := &http.Server{Addr: args.MetricsAddr, Handler: httpMux}
 
-	botApi, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
+	botApi, err := tgbotapi.NewBotAPI(cfg.Token)
 	if err != nil {
-		return fmt.Errorf("new tg bot api token: [%s] err: %w", cfg.TelegramBot.Token, err)
+		return fmt.Errorf("new tg bot api token: [%s] err: %w", cfg.Token, err)
 	}
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = cfg.TelegramBot.UpdatesTimeoutSec
+	u.Timeout = cfg.UpdatesTimeoutSec
 	chUpdates := botApi.GetUpdatesChan(u)
 
-	apiCli := instapi.New()
+	// Create instloader client
+	instloaderURL, err := url.Parse("http://instloader:8000")
+	if err != nil {
+		return fmt.Errorf("parse instloader URL err: %w", err)
+	}
+	instloaderClient := instloader.NewClient(instloaderURL)
 
 	redCC := redis.NewClient(&redis.Options{
-		Addr:     cfg.Clients.Redis.Addr,
-		Password: cfg.Clients.Redis.Pass,
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPass,
 	})
 	defer redCC.Close()
 
 	redisStorage, err := redisWrapper.NewClient(
 		redCC,
-		time.Minute*cfg.Clients.Redis.ConversationTTLMin,
-		time.Hour*cfg.Clients.Redis.HistoryMessagesTTLHours,
+		time.Minute*cfg.RedisConversationTTL,
+		time.Hour*cfg.RedisHistoryMessagesTTL,
 	)
 	if err != nil {
 		return fmt.Errorf("connect to redis err: %w", err)
 	}
 
 	// ---> open AI
-	ai := openai.NewClient(cfg.Clients.OpenAI.ApiKey)
+	ai := openai.NewClient(cfg.OpenAIAPIKey)
 	chatGptSrv, err := chatgpt.NewService(
 		ai,
-		cfg.Clients.OpenAI.GPTModelForConv,
-		cfg.Clients.OpenAI.GPTModelForHistory,
-		cfg.Clients.OpenAI.ApiKey,
+		cfg.OpenAIGPTModelForConv,
+		cfg.OpenAIGPTModelForHistory,
+		cfg.OpenAIAPIKey,
 	)
 	if err != nil {
 		return fmt.Errorf("chat gpt service err: %w", err)
@@ -107,12 +113,12 @@ func Run(ctx context.Context, args run.Args) error {
 	botSrv := listener.NewInstaBotService(
 		ctx,
 		botApi,
-		apiCli,
-		cfg.TelegramBot.CreatorUserID,
+		instloaderClient,
+		cfg.CreatorUserID,
 		chUpdates,
 		cfg.CaptionCharsLimit,
 		tiktokapi.New(),
-		youtube.New(cfg.Clients.YoutubeApi.MaxQuality),
+		youtube.New(cfg.MaxQuality),
 		redisStorage,
 		nil,
 		chatGptSrv,

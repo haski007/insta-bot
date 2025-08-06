@@ -145,8 +145,8 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
-				logrus.Infof("Instagram post ignored: %s", update.Message.Text)
-				// go rcv.msgInstagramTrigger(update)
+				// logrus.Infof("Instagram post ignored: %s", update.Message.Text)
+				go rcv.msgInstagramTrigger(update)
 			//rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
 				go rcv.msgTwitterTrigger(update)

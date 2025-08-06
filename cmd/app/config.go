@@ -1,64 +1,42 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"time"
 
-	"github.com/haski007/insta-bot/pkg/factory"
-	"gopkg.in/yaml.v2"
+	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
-	Clients struct {
-		YoutubeApi YouTubeConfig `yaml:"youtube_api"`
-		Redis      RedisClient   `yaml:"redis"`
-		Google     GoogleConfig  `yaml:"google"`
-		OpenAI     OpenAIConfig  `yaml:"openai"`
+	// Google
+	GoogleCredentialsPath string `env:"GOOGLE_CREDENTIALS_PATH"`
+
+	// Youtube
+	MaxQuality int `env:"MAX_QUALITY"`
+
+	// OpenAI
+	OpenAIAPIKey             string `env:"OPENAI_API_KEY"`
+	OpenAIGPTModelForConv    string `env:"OPENAI_GPT_MODEL_FOR_CONV"`
+	OpenAIGPTModelForHistory string `env:"OPENAI_GPT_MODEL_FOR_HISTORY"`
+
+	// Redis
+	RedisAddr               string        `env:"REDIS_ADDR"`
+	RedisPass               string        `env:"REDIS_PASS"`
+	RedisConversationTTL    time.Duration `env:"REDIS_CONVERSATION_TTL"`
+	RedisHistoryMessagesTTL time.Duration `env:"REDIS_HISTORY_MESSAGES_TTL"`
+	CaptionCharsLimit       int           `env:"CAPTION_CHARS_LIMIT"`
+
+	// Telegram bot
+	Token             string `env:"TELEGRAM_BOT_TOKEN"`
+	UpdatesTimeoutSec int    `env:"TELEGRAM_BOT_UPDATES_TIMEOUT_SEC"`
+	CreatorUserID     int64  `env:"TELEGRAM_BOT_CREATOR_USER_ID"`
+
+	// Instloader
+	InstloaderBaseURL string `env:"INSTLOADER_BASE_URL"`
+}
+
+func Load(cfg *Config) error {
+	if err := env.Parse(cfg); err != nil {
+		return err
 	}
-	TelegramBot factory.TelegramBotCfg `yaml:"telegram_bot"`
-
-	CaptionCharsLimit int `yaml:"caption_chars_limit"`
-}
-
-type GoogleConfig struct {
-	CredentialsPath string `yaml:"credentials_path"`
-}
-
-type OpenAIConfig struct {
-	ApiKey             string `yaml:"api_key"`
-	GPTModelForConv    string `yaml:"gpt_model_for_conv"`
-	GPTModelForHistory string `yaml:"gpt_model_for_history"`
-}
-
-type RedisClient struct {
-	Addr                    string        `yaml:"addr"`
-	Pass                    string        `yaml:"pass"`
-	ConversationTTLMin      time.Duration `yaml:"conversation_ttl_min"`
-	HistoryMessagesTTLHours time.Duration `yaml:"history_messages_ttl_hours"`
-}
-
-type YouTubeConfig struct {
-	MaxQuality int `yaml:"max_quality"`
-}
-
-func Load(configFile string, cfg interface{}) error {
-	fileData, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("can't read config file: %w", err)
-	}
-
-	fileData = []byte(os.ExpandEnv(string(fileData)))
-
-	if err = yaml.Unmarshal(fileData, cfg); err != nil {
-		return fmt.Errorf("can't unmarshal config data: %w", err)
-	}
-
-	if v, ok := cfg.(interface{ Validate() error }); ok {
-		if err = v.Validate(); err != nil {
-			return fmt.Errorf("invalid config: %w", err)
-		}
-	}
-
 	return nil
 }

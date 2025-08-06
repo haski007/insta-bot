@@ -8,6 +8,5 @@ WORKDIR /insta-bot
 # Build the bot
 RUN make build
 
-
 # Run the bot
-CMD ["./build/insta-bot", "-config", "config/local.yaml", "-log_level", "DEBUG"]
+CMD ["./build/insta-bot"]

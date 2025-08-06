@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/haski007/insta-bot/internal/clients/instapi"
+	"github.com/haski007/insta-bot/internal/clients/instloader"
 
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 
@@ -29,14 +29,14 @@ const (
 )
 
 type InstaBotService struct {
-	bot        *tgbotapi.BotAPI
-	tiktokApi  *tiktokapi.TikTokClient
-	youtubeApi *youtube.Client
-	instapi    *instapi.Api
-	calendar   google.Calendar
-	updates    tgbotapi.UpdatesChannel
-	storage    storage.Storage
-	gpt        *chatgpt.Service
+	bot           *tgbotapi.BotAPI
+	tiktokApi     *tiktokapi.TikTokClient
+	youtubeApi    *youtube.Client
+	instloaderApi *instloader.Client
+	calendar      google.Calendar
+	updates       tgbotapi.UpdatesChannel
+	storage       storage.Storage
+	gpt           *chatgpt.Service
 
 	creatorID         int64
 	captionCharsLimit int
@@ -51,7 +51,7 @@ type InstaBotService struct {
 func NewInstaBotService(
 	ctx context.Context,
 	botApi *tgbotapi.BotAPI,
-	instapi *instapi.Api,
+	instloaderApi *instloader.Client,
 	creatorID int64,
 	updatesChan tgbotapi.UpdatesChannel,
 	captionCharsLimit int,
@@ -63,9 +63,9 @@ func NewInstaBotService(
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
+		instloaderApi:     instloaderApi,
 		creatorID:         creatorID,
 		updates:           updatesChan,
-		instapi:           instapi,
 		ctx:               ctx,
 		captionCharsLimit: captionCharsLimit,
 		tiktokApi:         tiktokApi,

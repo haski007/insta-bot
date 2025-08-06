@@ -28,6 +28,16 @@ func (rcv *InstaBotService) ReplyAudio(chatID int64, messageID int, audio tgbota
 	return err
 }
 
+func (rcv *InstaBotService) ReplyVideo(chatID int64, messageID int, video tgbotapi.VideoConfig, caption string) error {
+	message := tgbotapi.NewMessage(chatID, "")
+	message.ReplyToMessageID = messageID
+	message.AllowSendingWithoutReply = true
+	message.Text = caption
+
+	_, err := rcv.bot.Send(video)
+	return err
+}
+
 func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 
