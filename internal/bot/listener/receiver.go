@@ -145,7 +145,7 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
-				if update.Message.Chat.ID == -1001621973548 {
+				if update.Message.Chat.ID == -1001621973548 || update.Message.Chat.ID == -4963350858 {
 					go rcv.msgInstagramTrigger(update)
 				} else {
 					rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
