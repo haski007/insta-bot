@@ -77,7 +77,7 @@ func Run(ctx context.Context, args run.Args) error {
 	chUpdates := botApi.GetUpdatesChan(u)
 
 	// Create instloader client
-	instloaderURL, err := url.Parse("http://instloader:8000")
+	instloaderURL, err := url.Parse(cfg.InstloaderBaseURL)
 	if err != nil {
 		return fmt.Errorf("parse instloader URL err: %w", err)
 	}
