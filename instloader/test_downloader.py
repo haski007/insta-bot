@@ -16,7 +16,7 @@ class TestDownloader(unittest.TestCase):
         print("STARTING TEST: test_get_post_info_dkzbpsipi_w")
         print("="*50)
         
-        shortcode = "DKZbpSiPi_W"
+        shortcode = "Cyf8L7GoPCQ"
         print(f"Testing with shortcode: {shortcode}")
         
         # Call the function

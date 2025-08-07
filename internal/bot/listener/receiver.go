@@ -111,6 +111,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "unsub_to_startup":
 				go rcv.cmdUnsubToStartupHandler(update)
 
+			case command == "disable_loader":
+				go rcv.cmdDisableLoaderHandler(update)
+			case command == "enable_loader":
+				go rcv.cmdEnableLoaderHandler(update)
+
 			case command == "sum":
 				safego.New(func() {
 					rcv.cmdSum(update)
@@ -145,10 +150,14 @@ func (rcv *InstaBotService) StartPool() error {
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
 			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
-				if update.Message.Chat.ID == -1001621973548 || update.Message.Chat.ID == -4963350858 {
+				loaderEnabled, err := rcv.storage.IsChatLoaderEnabled(update.Message.Chat.ID)
+				if err != nil {
+					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
+				}
+				if loaderEnabled {
 					go rcv.msgInstagramTrigger(update)
 				} else {
-					rcv.log.Infof("Ignore instagram post: %s due to broken downloader", update.Message.Text)
+					rcv.log.Infof("Ignore instagram post: %s due to loader disabled", update.Message.Text)
 				}
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
 				go rcv.msgTwitterTrigger(update)

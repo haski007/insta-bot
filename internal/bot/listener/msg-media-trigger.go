@@ -69,6 +69,25 @@ func downloadVideo(videoURL string) (tgbotapi.FileBytes, error) {
 	}, nil
 }
 
+// downloadImage downloads an image from URL and returns file bytes
+func downloadImage(imageURL string) (tgbotapi.FileBytes, error) {
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return tgbotapi.FileBytes{}, fmt.Errorf("download image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	imageBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return tgbotapi.FileBytes{}, fmt.Errorf("read image bytes: %w", err)
+	}
+
+	return tgbotapi.FileBytes{
+		Name:  fmt.Sprintf("image_%d.jpg", time.Now().UnixNano()),
+		Bytes: imageBytes,
+	}, nil
+}
+
 // truncateCaption truncates caption to fit within character limit
 func truncateCaption(caption string, limit int) string {
 	if len(caption) <= limit {
@@ -153,11 +172,37 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 			}
 		}
 	} else {
-		// Send text message for non-video posts
-		message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
-			postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-		if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
-			rcv.log.WithError(err).Error("[msgInstagramTrigger] send message")
+		// Handle non-video content (images)
+		if postInfo.URL != "" {
+			// Download the image
+			imageFile, err := downloadImage(postInfo.URL)
+			if err != nil {
+				rcv.log.WithError(err).Error("[msgInstagramTrigger] download image")
+				// Fallback to text message if download fails
+				message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+					postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+				if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+					rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
+				}
+				return
+			}
+
+			// Send the image with caption
+			photoConfig := tgbotapi.NewPhoto(chatID, imageFile)
+			photoConfig.Caption = caption
+			photoConfig.ReplyToMessageID = messageID
+
+			if _, err := rcv.bot.Send(photoConfig); err != nil {
+				rcv.log.WithError(err).Error("[msgInstagramTrigger] send photo")
+				// Fallback to text message if photo fails
+				message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+					postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+				if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+					rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
+				}
+			}
+		} else {
+			rcv.log.Error("[msgInstagramTrigger] no media URL available for post %s", postInfo.Shortcode)
 		}
 	}
 }

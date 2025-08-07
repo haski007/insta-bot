@@ -45,6 +45,11 @@ type Storage interface {
 	GetMessages(chatID int64, count int) (messages []string, err error)
 	PurgeHistory(chatID int64) error
 
+	// loader
+	EnableLoaderForChat(chatID int64) error
+	DisableLoaderForChat(chatID int64) error
+	IsChatLoaderEnabled(chatID int64) (bool, error)
+
 	IsReadOnly() (bool, error)
 }
 

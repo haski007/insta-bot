@@ -133,3 +133,19 @@ func (r *redisClient) GetAllStartupNewsletters() (newsletterConv map[int64][]sto
 
 	return newsletterConv, nil
 }
+
+func (r *redisClient) EnableLoaderForChat(chatID int64) error {
+	return r.conn.SRem(r.keyFromChatID("loader_disabled", chatID), chatID).Err()
+}
+
+func (r *redisClient) DisableLoaderForChat(chatID int64) error {
+	return r.conn.SAdd(r.keyFromChatID("loader_disabled", chatID), chatID).Err()
+}
+
+func (r *redisClient) IsChatLoaderEnabled(chatID int64) (bool, error) {
+	exists, err := r.conn.SIsMember(r.keyFromChatID("loader_disabled", chatID), chatID).Result()
+	if err != nil {
+		return false, fmt.Errorf("redis sismember err: %w", err)
+	}
+	return !exists, nil
+}
