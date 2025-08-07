@@ -30,6 +30,8 @@ services:
     build:
       context: .
       dockerfile: docker/instloader.Dockerfile
+    env_file:
+      - .env
     ports:
       - "8003:8003"
 
