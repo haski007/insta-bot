@@ -1,14 +1,28 @@
 import unittest
+import logging
 from downloader import get_post_info
+
+# Configure logging for tests
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 class TestDownloader(unittest.TestCase):
     
     def test_get_post_info_dkzbpsipi_w(self):
         """Test get_post_info function with shortcode DKZbpSiPi_W"""
+        print("\n" + "="*50)
+        print("STARTING TEST: test_get_post_info_dkzbpsipi_w")
+        print("="*50)
+        
         shortcode = "DKZbpSiPi_W"
+        print(f"Testing with shortcode: {shortcode}")
         
         # Call the function
+        print("Calling get_post_info...")
         result = get_post_info(shortcode)
+        print("get_post_info completed")
         
         # Basic validation
         self.assertIsInstance(result, dict)
@@ -52,6 +66,10 @@ class TestDownloader(unittest.TestCase):
             print(f"  Likes: {result['likes']}")
             print(f"  Comments: {result['comments']}")
             print(f"  URL: {result['url']}")
+        
+        print("="*50)
+        print("TEST COMPLETED")
+        print("="*50 + "\n")
 
 if __name__ == "__main__":
     unittest.main() 
