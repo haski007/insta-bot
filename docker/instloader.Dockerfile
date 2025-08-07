@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir fastapi "uvicorn[standard]" instaloader
 # Copy the instloader directory
 COPY instloader/ /app/instloader/
 
-EXPOSE 8000
+EXPOSE 8003
 
-CMD ["uvicorn", "instloader.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "instloader.server:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
