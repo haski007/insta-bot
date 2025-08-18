@@ -90,6 +90,7 @@ def create_instaloader():
                 os.makedirs(session_dir, exist_ok=True)
             _L.load_session_from_file(username, session_file)
             logger.info(f"Loaded Instagram session from file for user {username}")
+            logger.info(f"Session load status: logged_in={_L.context.is_logged_in}")
         except Exception as e:
             logger.warning(f"No valid session file loaded ({e}); will try fresh login if password is provided")
 
@@ -102,6 +103,7 @@ def create_instaloader():
                 logger.info(f"Attempting to login as {username}...")
                 _L.login(username, password)
                 logger.info(f"Successfully logged in as {username}")
+                logger.info(f"Login status: logged_in={_L.context.is_logged_in}")
                 # Save session for reuse if configured
                 if session_file:
                     try:
@@ -119,6 +121,7 @@ def create_instaloader():
             logger.warning("No Instagram credentials found in environment variables")
             logger.warning("Continuing without authentication (may have rate limits)")
     
+    logger.info(f"Instaloader ready; logged_in={_L.context.is_logged_in}")
     return _L
 
 def get_instaloader():
