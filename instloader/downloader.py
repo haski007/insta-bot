@@ -93,28 +93,31 @@ def create_instaloader():
         except Exception as e:
             logger.warning(f"No valid session file loaded ({e}); will try fresh login if password is provided")
 
-    # Login if credentials are provided and not already logged in
-    if username and password and not _L.context.is_logged_in:
-        try:
-            logger.info(f"Attempting to login as {username}...")
-            _L.login(username, password)
-            logger.info(f"Successfully logged in as {username}")
-            # Save session for reuse if configured
-            if session_file:
-                try:
-                    session_dir = os.path.dirname(session_file)
-                    if session_dir:
-                        os.makedirs(session_dir, exist_ok=True)
-                    _L.save_session_to_file(session_file)
-                    logger.info("Saved Instagram session to file for reuse")
-                except Exception as e:
-                    logger.error(f"Failed to save session to file: {e}")
-        except Exception as e:
-            logger.error(f"Login failed: {e}")
-            logger.warning("Continuing without authentication (may have rate limits)")
+    # Login only if not already logged in; otherwise skip misleading warnings
+    if _L.context.is_logged_in:
+        logger.info("Already logged in; skipping login")
     else:
-        logger.warning("No Instagram credentials found in environment variables")
-        logger.warning("Continuing without authentication (may have rate limits)")
+        if username and password:
+            try:
+                logger.info(f"Attempting to login as {username}...")
+                _L.login(username, password)
+                logger.info(f"Successfully logged in as {username}")
+                # Save session for reuse if configured
+                if session_file:
+                    try:
+                        session_dir = os.path.dirname(session_file)
+                        if session_dir:
+                            os.makedirs(session_dir, exist_ok=True)
+                        _L.save_session_to_file(session_file)
+                        logger.info("Saved Instagram session to file for reuse")
+                    except Exception as e:
+                        logger.error(f"Failed to save session to file: {e}")
+            except Exception as e:
+                logger.error(f"Login failed: {e}")
+                logger.warning("Continuing without authentication (may have rate limits)")
+        else:
+            logger.warning("No Instagram credentials found in environment variables")
+            logger.warning("Continuing without authentication (may have rate limits)")
     
     return _L
 
