@@ -2,8 +2,8 @@ from fastapi import FastAPI, Query, HTTPException
 from .downloader import get_post_info, create_instaloader
 import logging
 
-# Use module logger; rely on Uvicorn's logging configuration to avoid duplicate handlers
-logger = logging.getLogger(__name__)
+# Emit via Uvicorn's logger so messages appear under its configured handlers
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 

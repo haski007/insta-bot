@@ -9,8 +9,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from instaloader import Instaloader, Post
 
-# Configure logging
-logger = logging.getLogger(__name__)
+# Configure logging to emit via Uvicorn's logger so INFO-level lines are visible in container logs
+logger = logging.getLogger("uvicorn.error")
 
 # Global Instaloader instance
 _L = None
