@@ -205,6 +205,77 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
     except Exception as e:
         logger.warning(f"JSON-LD parse failed: {e}")
 
+    # Inline JSON fallback: extract video_url/display_url/thumbnail_src from embedded JSON
+    try:
+        def _unescape(val: str) -> str:
+            try:
+                return json.loads(f'"{val}"')
+            except Exception:
+                return val.replace('\\u0026', '&').replace('\\/', '/')
+
+        if not video_url:
+            m = re.search(r'"video_url":"([^"\\]+(?:\\.[^"\\]+)*)"', html)
+            if m:
+                video_url = _unescape(m.group(1))
+                is_video = True
+        if not image_url:
+            m = re.search(r'"display_url":"([^"\\]+(?:\\.[^"\\]+)*)"', html)
+            if m:
+                image_url = _unescape(m.group(1))
+        if not image_url:
+            m = re.search(r'"thumbnail_src":"([^"\\]+(?:\\.[^"\\]+)*)"', html)
+            if m:
+                image_url = _unescape(m.group(1))
+        # Additional patterns frequently present in reels
+        if not video_url:
+            # video_versions: [{"url":"...mp4"}]
+            m = re.search(r'"video_versions"\s*:\s*\[\s*\{[^\}]*?"url"\s*:\s*"([^"\\]+(?:\\.[^"\\]+)*)"', html, re.DOTALL)
+            if m:
+                video_url = _unescape(m.group(1))
+                is_video = True
+        if not video_url:
+            # playback_url may point to m3u8; prefer mp4 if found later
+            m = re.search(r'"playback_url"\s*:\s*"([^"\\]+)"', html)
+            if m:
+                candidate = _unescape(m.group(1))
+                # only accept if it looks like mp4; otherwise keep as last resort
+                if candidate.endswith('.mp4'):
+                    video_url = candidate
+                    is_video = True
+        if not video_url:
+            # Generic .mp4 in HTML (e.g., data URLs or sources)
+            m = re.search(r'https?://[^"\s<>]+\.mp4', html)
+            if m:
+                video_url = _unescape(m.group(0))
+                is_video = True
+        if not author:
+            m = re.search(r'"username":"([^"]+)"', html)
+            if m:
+                author = _unescape(m.group(1))
+        if not caption:
+            m = re.search(r'"edge_media_to_caption"\s*:\s*\{\s*"edges"\s*:\s*\[\{\s*"node"\s*:\s*\{\s*"text"\s*:\s*"(.*?)"', html, re.DOTALL)
+            if m:
+                caption = _unescape(m.group(1))
+    except Exception as e:
+        logger.warning(f"Inline JSON extraction failed: {e}")
+
+    # oEmbed fallback for thumbnail/author when still missing
+    try:
+        if not (video_url or image_url):
+            for base in ("https://www.instagram.com/p/", "https://www.instagram.com/reel/"):
+                oembed_url = f"https://www.instagram.com/oembed/?url={base}{shortcode}/"
+                r = session.get(oembed_url, headers=headers, timeout=15)
+                logger.info(f"oEmbed GET {oembed_url} -> {r.status_code}")
+                if r.status_code == 200:
+                    data = r.json()
+                    image_url = image_url or data.get("thumbnail_url") or ""
+                    author = author or data.get("author_name") or author
+                    caption = caption or data.get("title") or caption
+                    if image_url:
+                        break
+    except Exception as e:
+        logger.warning(f"oEmbed fallback failed: {e}")
+
     return {
         "shortcode": shortcode,
         "is_video": is_video,
