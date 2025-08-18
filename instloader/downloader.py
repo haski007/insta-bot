@@ -4,6 +4,7 @@ import requests
 import re
 import time
 import random
+import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from instaloader import Instaloader, Post
@@ -125,11 +126,109 @@ def get_instaloader():
         _L = create_instaloader()
     return _L
 
+def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> dict:
+    """Fetch media info by scraping public page HTML (OG tags and JSON-LD)."""
+    headers = dict(session.headers)
+    headers.setdefault('User-Agent', os.getenv('INSTAGRAM_USER_AGENT', headers.get('User-Agent', 'Mozilla/5.0')))
+    headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
+    headers.setdefault('Accept-Language', 'en-US,en;q=0.9')
+    headers.setdefault('Referer', 'https://www.instagram.com/')
+
+    candidate_urls = [
+        f"https://www.instagram.com/p/{shortcode}/",
+        f"https://www.instagram.com/reel/{shortcode}/",
+    ]
+
+    html = None
+    for u in candidate_urls:
+        try:
+            resp = session.get(u, headers=headers, timeout=20)
+            logger.info(f"Fallback GET {u} -> {resp.status_code}")
+            if resp.status_code == 200 and ('og:' in resp.text or 'application/ld+json' in resp.text):
+                html = resp.text
+                break
+        except Exception as e2:
+            logger.warning(f"Fallback fetch failed for {u}: {e2}")
+
+    if not html:
+        raise RuntimeError("fallback html not available")
+
+    # Extract basic OG meta
+    def meta_content(prop: str) -> str:
+        m = re.search(rf'<meta[^>]+property=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']+)["\']', html, re.IGNORECASE)
+        return m.group(1) if m else ""
+
+    og_video = meta_content('og:video') or meta_content('og:video:secure_url')
+    og_image = meta_content('og:image')
+    og_title = meta_content('og:title')
+    og_desc = meta_content('og:description')
+    author = meta_content('instagram:owner_user_name') or meta_content('og:site_name')
+
+    is_video = bool(og_video)
+    video_url = og_video
+    image_url = og_image
+    caption = og_title or og_desc
+
+    # JSON-LD enhancement (often contains contentUrl/thumbnailUrl)
+    try:
+        for m in re.finditer(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.IGNORECASE | re.DOTALL):
+            data = json.loads(m.group(1).strip())
+            if isinstance(data, dict):
+                content_url = data.get('contentUrl') or data.get('video', {}).get('contentUrl') if isinstance(data.get('video'), dict) else None
+                thumbnail_url = data.get('thumbnailUrl')
+                if content_url and not video_url:
+                    video_url = content_url
+                    is_video = True
+                if thumbnail_url and not image_url:
+                    if isinstance(thumbnail_url, list) and thumbnail_url:
+                        image_url = thumbnail_url[0]
+                    elif isinstance(thumbnail_url, str):
+                        image_url = thumbnail_url
+                if not caption:
+                    caption = data.get('description') or caption
+            elif isinstance(data, list):
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    content_url = item.get('contentUrl')
+                    if content_url and not video_url:
+                        video_url = content_url
+                        is_video = True
+                    thumbnail_url = item.get('thumbnailUrl')
+                    if thumbnail_url and not image_url:
+                        if isinstance(thumbnail_url, list) and thumbnail_url:
+                            image_url = thumbnail_url[0]
+                        elif isinstance(thumbnail_url, str):
+                            image_url = thumbnail_url
+                    if not caption:
+                        caption = item.get('description') or caption
+    except Exception as e:
+        logger.warning(f"JSON-LD parse failed: {e}")
+
+    return {
+        "shortcode": shortcode,
+        "is_video": is_video,
+        "url": image_url or "",
+        "video_url": video_url if is_video else None,
+        "caption": caption or "",
+        "owner": author or "",
+        "likes": 0,
+        "comments": 0,
+        "timestamp": "",
+    }
+
+
 def get_post_info(shortcode: str):
     try:
         # Use the global instance
         loader = get_instaloader()
         logger.info(f"Instaloader logged_in={loader.context.is_logged_in}")
+        # Optional: avoid GraphQL entirely when forced
+        if os.getenv('INSTAGRAM_FORCE_HTML_FALLBACK', 'false').lower() in ('1', 'true', 'yes'):
+            logger.info("Force HTML fallback enabled; skipping GraphQL")
+            result = _fetch_public_page_metadata(shortcode, loader.context._session)
+            return result
+
         post = Post.from_shortcode(loader.context, shortcode)
         return {
             "shortcode": post.shortcode,
@@ -146,60 +245,13 @@ def get_post_info(shortcode: str):
         err_msg = str(e)
         logger.error(f"Error getting post info for {shortcode}: {err_msg}")
 
-        # Fallback: try scraping public page meta tags (og:video / og:image)
+        # Fallback: try scraping public page meta tags (og:video / og:image) and JSON-LD
         try:
             # Gentle backoff before fallback
             time.sleep(random.uniform(0.8, 1.6))
-
             loader = get_instaloader()
             session = loader.context._session
-            headers = dict(session.headers)
-            headers.setdefault('User-Agent', os.getenv('INSTAGRAM_USER_AGENT', headers.get('User-Agent', 'Mozilla/5.0')))
-            headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
-            headers.setdefault('Accept-Language', 'en-US,en;q=0.9')
-
-            candidate_urls = [
-                f"https://www.instagram.com/p/{shortcode}/",
-                f"https://www.instagram.com/reel/{shortcode}/",
-            ]
-
-            html = None
-            for u in candidate_urls:
-                try:
-                    resp = session.get(u, headers=headers, timeout=20)
-                    if resp.status_code == 200 and 'og:' in resp.text:
-                        html = resp.text
-                        break
-                except Exception as e2:
-                    logger.warning(f"Fallback fetch failed for {u}: {e2}")
-
-            if not html:
-                return {"error": err_msg}
-
-            # Extract metadata
-            def meta_content(prop: str) -> str:
-                # Simple regex for meta tags
-                m = re.search(rf'<meta[^>]+property=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']+)["\']', html, re.IGNORECASE)
-                return m.group(1) if m else ""
-
-            og_video = meta_content('og:video') or meta_content('og:video:secure_url')
-            og_image = meta_content('og:image')
-            og_title = meta_content('og:title')
-            og_desc = meta_content('og:description')
-            author = meta_content('instagram:owner_user_name') or meta_content('og:site_name')
-
-            is_video = bool(og_video)
-            return {
-                "shortcode": shortcode,
-                "is_video": is_video,
-                "url": og_image,
-                "video_url": og_video if is_video else None,
-                "caption": og_title or og_desc,
-                "owner": author,
-                "likes": 0,
-                "comments": 0,
-                "timestamp": "",
-            }
+            return _fetch_public_page_metadata(shortcode, session)
         except Exception as e2:
             logger.error(f"Fallback scrape failed for {shortcode}: {e2}")
             return {"error": err_msg}
