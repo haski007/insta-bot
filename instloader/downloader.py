@@ -11,7 +11,6 @@ from instaloader import Instaloader, Post
 
 # Configure logging to emit via Uvicorn's logger so INFO-level lines are visible in container logs
 logger = logging.getLogger("uvicorn.error")
-logger.propagate = False
 
 # Global Instaloader instance
 _L = None
@@ -151,7 +150,7 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
         try:
             resp = session.get(u, headers=headers, timeout=20)
             logger.info(f"Fallback GET {u} -> {resp.status_code}")
-            if resp.status_code == 200:
+            if resp.status_code == 200 and ('og:' in resp.text or 'application/ld+json' in resp.text):
                 html = resp.text
                 break
         except Exception as e2:

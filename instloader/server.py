@@ -4,7 +4,6 @@ import logging
 
 # Emit via Uvicorn's logger so messages appear under its configured handlers
 logger = logging.getLogger("uvicorn.error")
-logger.propagate = False
 
 app = FastAPI()
 
