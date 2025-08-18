@@ -150,7 +150,7 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
         try:
             resp = session.get(u, headers=headers, timeout=20)
             logger.info(f"Fallback GET {u} -> {resp.status_code}")
-            if resp.status_code == 200 and ('og:' in resp.text or 'application/ld+json' in resp.text):
+            if resp.status_code == 200:
                 html = resp.text
                 break
         except Exception as e2:
