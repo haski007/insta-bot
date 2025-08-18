@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 from .downloader import get_post_info, create_instaloader
 import logging
+import sys
 
 # Emit via Uvicorn's logger so messages appear under its configured handlers
 logger = logging.getLogger("uvicorn.error")
@@ -21,7 +22,9 @@ async def startup_event():
         if loader.context.is_logged_in:
             logger.info("✅ Instaloader is LOGGED IN and ready to use")
         else:
-            logger.warning("⚠️  Instaloader is NOT logged in - will have rate limits")
+            logger.error("❌ Instaloader is NOT logged in - exiting with error as requested")
+            # Exit the process so the container fails fast
+            sys.exit(1)
         
         logger.info("=== INSTALOADER STARTUP COMPLETE ===")
     except Exception as e:
