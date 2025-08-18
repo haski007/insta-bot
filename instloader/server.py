@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from .downloader import get_post_info, create_instaloader
 import logging
 
@@ -36,4 +36,10 @@ def health_check():
 @app.get("/media")
 def media(shortcode: str = Query(...)):
     result = get_post_info(shortcode)
+    if isinstance(result, dict) and result.get("error"):
+        msg = str(result.get("error"))
+        # Map known rate-limit/unauthorized messages to 429; otherwise 502
+        if "Please wait a few minutes" in msg or "429" in msg or "401" in msg or "403" in msg:
+            raise HTTPException(status_code=429, detail=msg)
+        raise HTTPException(status_code=502, detail=msg)
     return result

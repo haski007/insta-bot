@@ -10,4 +10,4 @@ COPY instloader/ /app/instloader/
 
 EXPOSE 8003
 
-CMD ["uvicorn", "instloader.server:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
+CMD ["uvicorn", "instloader.server:app", "--host", "0.0.0.0", "--port", "8003"]

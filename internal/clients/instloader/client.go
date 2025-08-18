@@ -52,6 +52,10 @@ func (c *Client) GetPostInfo(shortcode string) (PostInfo, error) {
 		return PostInfo{}, fmt.Errorf("read body: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return PostInfo{}, fmt.Errorf("instloader http %d: %s", resp.StatusCode, string(body))
+	}
+
 	var postInfo PostInfo
 	if err := json.Unmarshal(body, &postInfo); err != nil {
 		return PostInfo{}, fmt.Errorf("unmarshal post info: %w", err)

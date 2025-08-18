@@ -1,6 +1,9 @@
 import os
 import logging
 import requests
+import re
+import time
+import random
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from instaloader import Instaloader, Post
@@ -140,5 +143,63 @@ def get_post_info(shortcode: str):
             "timestamp": post.date_utc.isoformat(),
         }
     except Exception as e:
-        logger.error(f"Error getting post info for {shortcode}: {e}")
-        return {"error": str(e)}
+        err_msg = str(e)
+        logger.error(f"Error getting post info for {shortcode}: {err_msg}")
+
+        # Fallback: try scraping public page meta tags (og:video / og:image)
+        try:
+            # Gentle backoff before fallback
+            time.sleep(random.uniform(0.8, 1.6))
+
+            loader = get_instaloader()
+            session = loader.context._session
+            headers = dict(session.headers)
+            headers.setdefault('User-Agent', os.getenv('INSTAGRAM_USER_AGENT', headers.get('User-Agent', 'Mozilla/5.0')))
+            headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
+            headers.setdefault('Accept-Language', 'en-US,en;q=0.9')
+
+            candidate_urls = [
+                f"https://www.instagram.com/p/{shortcode}/",
+                f"https://www.instagram.com/reel/{shortcode}/",
+            ]
+
+            html = None
+            for u in candidate_urls:
+                try:
+                    resp = session.get(u, headers=headers, timeout=20)
+                    if resp.status_code == 200 and 'og:' in resp.text:
+                        html = resp.text
+                        break
+                except Exception as e2:
+                    logger.warning(f"Fallback fetch failed for {u}: {e2}")
+
+            if not html:
+                return {"error": err_msg}
+
+            # Extract metadata
+            def meta_content(prop: str) -> str:
+                # Simple regex for meta tags
+                m = re.search(rf'<meta[^>]+property=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']+)["\']', html, re.IGNORECASE)
+                return m.group(1) if m else ""
+
+            og_video = meta_content('og:video') or meta_content('og:video:secure_url')
+            og_image = meta_content('og:image')
+            og_title = meta_content('og:title')
+            og_desc = meta_content('og:description')
+            author = meta_content('instagram:owner_user_name') or meta_content('og:site_name')
+
+            is_video = bool(og_video)
+            return {
+                "shortcode": shortcode,
+                "is_video": is_video,
+                "url": og_image,
+                "video_url": og_video if is_video else None,
+                "caption": og_title or og_desc,
+                "owner": author,
+                "likes": 0,
+                "comments": 0,
+                "timestamp": "",
+            }
+        except Exception as e2:
+            logger.error(f"Fallback scrape failed for {shortcode}: {e2}")
+            return {"error": err_msg}
