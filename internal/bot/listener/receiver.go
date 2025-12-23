@@ -120,6 +120,8 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.cmdSubARCEventHandler(update)
 			case command == "unsub_arc_events":
 				go rcv.cmdUnsubARCEventHandler(update)
+			case command == "arc":
+				go rcv.cmdListArcEventsHandler(update)
 
 			case command == "sum":
 				safego.New(func() {
@@ -127,7 +129,6 @@ func (rcv *InstaBotService) StartPool() error {
 				}, func(pErr any) {
 					rcv.log.WithError(fmt.Errorf("%s", pErr)).Error("[cmdSum] panic")
 					rcv.NotifyCreator(fmt.Sprintf("%s cmdSum panic: %s", emoji.NoEntry, pErr))
-					return
 				})
 			case command == "purge_history":
 				go rcv.cmdPurgeHistory(update)
