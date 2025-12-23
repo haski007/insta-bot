@@ -120,6 +120,11 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	messageID := update.Message.MessageID
 	url := exprFindURL.FindString(update.Message.Text)
 
+	// if update.Message.From.UserName == "dmlitvin" {
+	// 	rcv.Reply(chatID, messageID, "Хуй тобі, а не відео")
+	// 	return
+	// }
+
 	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
 		return
 	}

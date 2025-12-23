@@ -32,6 +32,9 @@ type Config struct {
 
 	// Instloader
 	InstloaderBaseURL string `env:"INSTLOADER_BASE_URL"`
+	
+	// ARC raiders
+	ARCRAidersBaseURL string `env:"ARC_RAIDERS_BASE_URL"`
 }
 
 func Load(cfg *Config) error {

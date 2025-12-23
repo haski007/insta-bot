@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	arcraiders "github.com/haski007/insta-bot/internal/clients/arc-raiders"
 	"github.com/haski007/insta-bot/internal/clients/instloader"
 
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
@@ -29,14 +30,15 @@ const (
 )
 
 type InstaBotService struct {
-	bot           *tgbotapi.BotAPI
-	tiktokApi     *tiktokapi.TikTokClient
-	youtubeApi    *youtube.Client
-	instloaderApi *instloader.Client
-	calendar      google.Calendar
-	updates       tgbotapi.UpdatesChannel
-	storage       storage.Storage
-	gpt           *chatgpt.Service
+	bot              *tgbotapi.BotAPI
+	tiktokApi        *tiktokapi.TikTokClient
+	youtubeApi       *youtube.Client
+	instloaderApi    *instloader.Client
+	calendar         google.Calendar
+	updates          tgbotapi.UpdatesChannel
+	storage          storage.Storage
+	gpt              *chatgpt.Service
+	arcRaidersClient *arcraiders.Client
 
 	creatorID         int64
 	captionCharsLimit int
@@ -60,6 +62,7 @@ func NewInstaBotService(
 	storage storage.Storage,
 	calendarSrv google.Calendar,
 	gpt *chatgpt.Service,
+	arcRaidersClient *arcraiders.Client,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:               botApi,
@@ -73,6 +76,7 @@ func NewInstaBotService(
 		storage:           storage,
 		calendar:          calendarSrv,
 		gpt:               gpt,
+		arcRaidersClient:  arcRaidersClient,
 	}
 }
 

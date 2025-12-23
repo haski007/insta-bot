@@ -50,6 +50,11 @@ type Storage interface {
 	DisableLoaderForChat(chatID int64) error
 	IsChatLoaderEnabled(chatID int64) (bool, error)
 
+	// ARC raiders
+	SubscribeChatToARC(chatID int64) error
+	UnsubscribeChatToARC(chatID int64) error
+	GetAllARCSubscribedChats() ([]int64, error)
+
 	IsReadOnly() (bool, error)
 }
 

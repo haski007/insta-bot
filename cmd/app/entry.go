@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/haski007/insta-bot/internal/bot/listener"
+	arcraiders "github.com/haski007/insta-bot/internal/clients/arc-raiders"
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 	"github.com/haski007/insta-bot/internal/clients/instloader"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
@@ -110,6 +111,17 @@ func Run(ctx context.Context, args run.Args) error {
 		return fmt.Errorf("chat gpt service err: %w", err)
 	}
 
+	// ---> ARC raiders
+	arcRaidersURL, err := url.Parse(cfg.ARCRAidersBaseURL)
+	if err != nil {
+		return fmt.Errorf("parse ARC raiders URL err: %w", err)
+	}
+	arcRaidersClient := arcraiders.NewClient(arcRaidersURL)
+	if err != nil {
+		return fmt.Errorf("new ARC raiders client err: %w", err)
+	}
+
+
 	botSrv := listener.NewInstaBotService(
 		ctx,
 		botApi,
@@ -122,6 +134,7 @@ func Run(ctx context.Context, args run.Args) error {
 		redisStorage,
 		nil,
 		chatGptSrv,
+		arcRaidersClient,
 	).SetLogger(log)
 
 	// reads from redis all the funcs that should be run in set time
@@ -172,6 +185,14 @@ func Run(ctx context.Context, args run.Args) error {
 		log.Infof("Newsletter monitor is running")
 
 		botSrv.RunNewsLetter()
+		return nil
+	})
+
+	server.Go(func() error {
+		defer stop()
+		log.Infof("ARC raiders monitor is running")
+
+		botSrv.RunARCMonitor()
 		return nil
 	})
 

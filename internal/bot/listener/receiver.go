@@ -116,6 +116,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "enable_loader":
 				go rcv.cmdEnableLoaderHandler(update)
 
+			case command == "sub_arc_events":
+				go rcv.cmdSubARCEventHandler(update)
+			case command == "unsub_arc_events":
+				go rcv.cmdUnsubARCEventHandler(update)
+
 			case command == "sum":
 				safego.New(func() {
 					rcv.cmdSum(update)
