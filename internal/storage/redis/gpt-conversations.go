@@ -12,6 +12,10 @@ func getConversationKey(username string, chatID, userID int64) string {
 	return fmt.Sprintf("gpt/conversations/%s:%d:%d", username, chatID, userID)
 }
 
+func getGrokConversationKey(username string, chatID, userID int64) string {
+	return fmt.Sprintf("grok/conversations/%s:%d:%d", username, chatID, userID)
+}
+
 func getSystemRoleKey(chatID int64) string {
 	return fmt.Sprintf("gpt/system-role/%d", chatID)
 }
@@ -62,6 +66,35 @@ func (r *redisClient) GetConversation(req *storage.GetConversationReq) (conversa
 	key := getConversationKey(req.Username, req.ChatID, req.UserID)
 
 	return r.getReplicasArray(key)
+}
+
+func (r *redisClient) PushGrokConversation(req *storage.PushConversationReq) (err error) {
+	key := getGrokConversationKey(req.Username, req.ChatID, req.UserID)
+	for _, replica := range req.Replicas {
+		if err := r.conn.LPush(key, replica).Err(); err != nil {
+			return fmt.Errorf("redis lpush err: %w", err)
+		}
+	}
+
+	if err := r.conn.Expire(key, r.convTTL).Err(); err != nil {
+		return fmt.Errorf("redis expire err: %w", err)
+	}
+
+	return nil
+}
+
+func (r *redisClient) GetGrokConversation(req *storage.GetConversationReq) (conversation []storage.Replica, err error) {
+	key := getGrokConversationKey(req.Username, req.ChatID, req.UserID)
+
+	return r.getReplicasArray(key)
+}
+
+func (r *redisClient) DropGrokConversation(req *storage.DropConversationReq) (err error) {
+	key := getGrokConversationKey(req.Username, req.ChatID, req.UserID)
+	if err := r.conn.Del(key).Err(); err != nil {
+		return fmt.Errorf("redis del err: %w", err)
+	}
+	return nil
 }
 
 func (r *redisClient) getReplicasArray(key string) (conversation []storage.Replica, err error) {

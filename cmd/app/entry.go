@@ -14,6 +14,7 @@ import (
 	"github.com/haski007/insta-bot/internal/bot/listener"
 	arcraiders "github.com/haski007/insta-bot/internal/clients/arc-raiders"
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
+	"github.com/haski007/insta-bot/internal/clients/grok"
 	"github.com/haski007/insta-bot/internal/clients/instloader"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/internal/clients/youtube"
@@ -112,6 +113,18 @@ func Run(ctx context.Context, args run.Args) error {
 		return fmt.Errorf("chat gpt service err: %w", err)
 	}
 
+	// ---> Grok (xAI)
+	var grokSrv *grok.Service
+	if cfg.GrokAPIKey != "" {
+		grokSrv, err = grok.NewService(cfg.GrokAPIKey, cfg.GrokModelForConv)
+		if err != nil {
+			return fmt.Errorf("grok service err: %w", err)
+		}
+		log.Infof("grok client created with model: %s", cfg.GrokModelForConv)
+	} else {
+		log.Warn("GROK_API_KEY is not set, Grok integration disabled")
+	}
+
 	// ---> ARC raiders
 	arcRaidersURL, err := url.Parse(cfg.ARCRAidersBaseURL)
 	if err != nil {
@@ -135,6 +148,7 @@ func Run(ctx context.Context, args run.Args) error {
 		redisStorage,
 		nil,
 		chatGptSrv,
+		grokSrv,
 		arcRaidersClient,
 	).SetLogger(log)
 

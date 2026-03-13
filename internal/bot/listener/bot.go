@@ -10,6 +10,7 @@ import (
 	"github.com/haski007/insta-bot/internal/clients/instloader"
 
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
+	"github.com/haski007/insta-bot/internal/clients/grok"
 
 	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
@@ -38,6 +39,7 @@ type InstaBotService struct {
 	updates          tgbotapi.UpdatesChannel
 	storage          storage.Storage
 	gpt              *chatgpt.Service
+	grokSrv          *grok.Service
 	arcRaidersClient *arcraiders.Client
 
 	creatorID         int64
@@ -62,6 +64,7 @@ func NewInstaBotService(
 	storage storage.Storage,
 	calendarSrv google.Calendar,
 	gpt *chatgpt.Service,
+	grokSrv *grok.Service,
 	arcRaidersClient *arcraiders.Client,
 ) *InstaBotService {
 	return &InstaBotService{
@@ -76,6 +79,7 @@ func NewInstaBotService(
 		storage:           storage,
 		calendar:          calendarSrv,
 		gpt:               gpt,
+		grokSrv:           grokSrv,
 		arcRaidersClient:  arcRaidersClient,
 	}
 }

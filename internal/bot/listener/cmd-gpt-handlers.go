@@ -24,8 +24,29 @@ func (rcv *InstaBotService) cmdDropGPTConversationHandler(update tgbotapi.Update
 		return
 	}
 
-	if err := rcv.SendMessage(chatID, "Conversation dropped "+emoji.Check); err != nil {
+	if err := rcv.SendMessage(chatID, "GPT conversation dropped "+emoji.Check); err != nil {
 		rcv.log.WithError(err).Error("[cmdDropGPTConversationHandler] send message")
+		return
+	}
+}
+
+func (rcv *InstaBotService) cmdDropGrokConversationHandler(update tgbotapi.Update) {
+	chatID := update.Message.Chat.ID
+	userID := update.Message.From.ID
+	username := update.Message.From.UserName
+
+	if err := rcv.storage.DropGrokConversation(&storage.DropConversationReq{
+		Username: username,
+		UserID:   userID,
+		ChatID:   chatID,
+	}); err != nil {
+		rcv.log.WithError(err).Error("[cmdDropGrokConversationHandler] drop conversation")
+		rcv.SendError(chatID, ErrInternalServerError)
+		return
+	}
+
+	if err := rcv.SendMessage(chatID, "Grok conversation dropped "+emoji.Check); err != nil {
+		rcv.log.WithError(err).Error("[cmdDropGrokConversationHandler] send message")
 		return
 	}
 }

@@ -18,6 +18,10 @@ type Config struct {
 	OpenAIGPTModelForConv    string `env:"OPENAI_GPT_MODEL_FOR_CONV"`
 	OpenAIGPTModelForHistory string `env:"OPENAI_GPT_MODEL_FOR_HISTORY"`
 
+	// Grok (xAI)
+	GrokAPIKey      string `env:"GROK_API_KEY"`
+	GrokModelForConv string `env:"GROK_MODEL_FOR_CONV" envDefault:"grok-2-latest"`
+
 	// Redis
 	RedisAddr               string        `env:"REDIS_ADDR"`
 	RedisPass               string        `env:"REDIS_PASS"`

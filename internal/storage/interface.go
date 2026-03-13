@@ -34,6 +34,11 @@ type Storage interface {
 	GetConversation(req *GetConversationReq) (conversation []Replica, err error)
 	DropConversation(req *DropConversationReq) (err error)
 
+	// Grok
+	PushGrokConversation(req *PushConversationReq) (err error)
+	GetGrokConversation(req *GetConversationReq) (conversation []Replica, err error)
+	DropGrokConversation(req *DropConversationReq) (err error)
+
 	SubscribeChatToStartup(chatID int64) error
 	UnsubscribeChatToStartup(chatID int64) error
 	PushStartupNewsletter(chatID int64, replicas []Replica) error
