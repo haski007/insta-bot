@@ -29,6 +29,17 @@ func (rcv *InstaBotService) StartPool() error {
 			continue
 		}
 
+		// Check if user is in fuck list delete his message
+		if update.Message != nil {
+			if arrayContains(whoToFuck, strings.TrimPrefix(update.Message.From.UserName, "@")) {
+				err := rcv.DeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
+				if err != nil {
+					rcv.log.WithError(err).Error("DeleteMessage")
+				}
+				continue
+			}
+		}
+
 		if update.PollAnswer != nil {
 			go rcv.triggerPollAnswer(update)
 			continue
@@ -68,6 +79,7 @@ func (rcv *InstaBotService) StartPool() error {
 
 			case command == "list_players":
 				go rcv.cmdListPlayersHandler(update)
+
 
 			// CSGO addon ^)
 			case command == "reg_csgo_players":
@@ -139,6 +151,11 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.cmdStopStreamChat(update)
 			case command == "get_streams":
 				go rcv.cmdGetStreamingChats(update)
+
+			case command == "fuck":
+				go rcv.cmdFuck(update)
+			case command == "unfuck":
+				go rcv.cmdUnfuck(update)
 
 			default:
 				go func() {

@@ -101,6 +101,7 @@ func Run(ctx context.Context, args run.Args) error {
 
 	// ---> open AI
 	ai := openai.NewClient(cfg.OpenAIAPIKey)
+	log.Infof("open ai client created with model for conv: %s and model for history: %s", cfg.OpenAIGPTModelForConv, cfg.OpenAIGPTModelForHistory)
 	chatGptSrv, err := chatgpt.NewService(
 		ai,
 		cfg.OpenAIGPTModelForConv,
