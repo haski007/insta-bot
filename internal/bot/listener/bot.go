@@ -11,6 +11,7 @@ import (
 
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 	"github.com/haski007/insta-bot/internal/clients/grok"
+	"github.com/haski007/insta-bot/internal/clients/openrouter"
 
 	"github.com/haski007/insta-bot/internal/clients/google"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
@@ -40,6 +41,7 @@ type InstaBotService struct {
 	storage          storage.Storage
 	gpt              *chatgpt.Service
 	grokSrv          *grok.Service
+	openRouter       *openrouter.Service
 	arcRaidersClient *arcraiders.Client
 
 	creatorID         int64
@@ -65,6 +67,7 @@ func NewInstaBotService(
 	calendarSrv google.Calendar,
 	gpt *chatgpt.Service,
 	grokSrv *grok.Service,
+	openRouter *openrouter.Service,
 	arcRaidersClient *arcraiders.Client,
 ) *InstaBotService {
 	return &InstaBotService{
@@ -80,6 +83,7 @@ func NewInstaBotService(
 		calendar:          calendarSrv,
 		gpt:               gpt,
 		grokSrv:           grokSrv,
+		openRouter:        openRouter,
 		arcRaidersClient:  arcRaidersClient,
 	}
 }

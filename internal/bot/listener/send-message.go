@@ -19,6 +19,14 @@ func (rcv *InstaBotService) Reply(chatID int64, messageID int, text string) erro
 	return err
 }
 
+// ReplyPlain replies without Markdown to avoid breaking on user punctuation.
+func (rcv *InstaBotService) ReplyPlain(chatID int64, messageID int, text string) error {
+	message := tgbotapi.NewMessage(chatID, text)
+	message.ReplyToMessageID = messageID
+	_, err := rcv.bot.Send(message)
+	return err
+}
+
 func (rcv *InstaBotService) ReplyAudio(chatID int64, messageID int, audio tgbotapi.AudioConfig) error {
 	message := tgbotapi.NewMessage(chatID, "")
 	message.ReplyToMessageID = messageID

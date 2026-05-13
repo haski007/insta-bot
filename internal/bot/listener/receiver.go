@@ -80,7 +80,6 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "list_players":
 				go rcv.cmdListPlayersHandler(update)
 
-
 			// CSGO addon ^)
 			case command == "reg_csgo_players":
 				go rcv.cmdRegCSGOPlayersHandler(update)
@@ -110,12 +109,12 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "set_email":
 				go rcv.cmdSetEmailHandler(update)
 
-		case command == "set_system_role":
-			go rcv.cmdSetSystemRoleHandler(update)
-		case command == "drop_my_gpt":
-			go rcv.cmdDropGPTConversationHandler(update)
-		case command == "drop_my_grok":
-			go rcv.cmdDropGrokConversationHandler(update)
+			case command == "set_system_role":
+				go rcv.cmdSetSystemRoleHandler(update)
+			case command == "drop_my_gpt":
+				go rcv.cmdDropGPTConversationHandler(update)
+			case command == "drop_my_grok":
+				go rcv.cmdDropGrokConversationHandler(update)
 
 			case command == "spam":
 				go rcv.cmdSpam(update)
@@ -136,6 +135,11 @@ func (rcv *InstaBotService) StartPool() error {
 				go rcv.cmdUnsubARCEventHandler(update)
 			case command == "arc":
 				go rcv.cmdListArcEventsHandler(update)
+
+			case command == "ukraine_for_ukrainians":
+				go rcv.cmdUkraineForUkrainiansSub(update)
+			case command == "unsub_ukraine_for_ukrainians":
+				go rcv.cmdUkraineForUkrainiansUnsub(update)
 
 			case command == "sum":
 				safego.New(func() {
@@ -199,20 +203,20 @@ func (rcv *InstaBotService) StartPool() error {
 				//go rcv.msgYoutubeTrigger(update)
 				rcv.log.Infof("Ignore youtube: %s due to broken downloader", update.Message.Text)
 
-		case strings.HasPrefix(update.Message.Text, "?") && len(update.Message.Text) > 1:
-			go rcv.msgChatGPTQuestion(update)
-		case strings.HasPrefix(update.Message.Text, "!") && len(update.Message.Text) > 1:
-			go rcv.msgChatGTPConversation(update)
-		case strings.HasPrefix(update.Message.Text, "~") && len(update.Message.Text) > 1:
-			go rcv.msgGPTextToSpeech(update)
+			case strings.HasPrefix(update.Message.Text, "?") && len(update.Message.Text) > 1:
+				go rcv.msgChatGPTQuestion(update)
+			case strings.HasPrefix(update.Message.Text, "!") && len(update.Message.Text) > 1:
+				go rcv.msgChatGTPConversation(update)
+			case strings.HasPrefix(update.Message.Text, "~") && len(update.Message.Text) > 1:
+				go rcv.msgGPTextToSpeech(update)
 
-		case strings.HasPrefix(update.Message.Text, "g?") && len(update.Message.Text) > 2:
-			go rcv.msgGrokQuestion(update)
-		case strings.HasPrefix(update.Message.Text, "g!") && len(update.Message.Text) > 2:
-			go rcv.msgGrokConversation(update)
-
+			case strings.HasPrefix(update.Message.Text, "g?") && len(update.Message.Text) > 2:
+				go rcv.msgGrokQuestion(update)
+			case strings.HasPrefix(update.Message.Text, "g!") && len(update.Message.Text) > 2:
+				go rcv.msgGrokConversation(update)
+			default:
+				go rcv.msgUkraineAnglicismIfNeeded(update)
 			}
-
 			// ---> save to history
 			go rcv.msgSaveToHistory(update)
 		}

@@ -19,8 +19,12 @@ type Config struct {
 	OpenAIGPTModelForHistory string `env:"OPENAI_GPT_MODEL_FOR_HISTORY"`
 
 	// Grok (xAI)
-	GrokAPIKey      string `env:"GROK_API_KEY"`
+	GrokAPIKey       string `env:"GROK_API_KEY"`
 	GrokModelForConv string `env:"GROK_MODEL_FOR_CONV" envDefault:"grok-2-latest"`
+
+	// OpenRouter (cheap models for extras, e.g. anglicism hints)
+	OpenRouterAPIKey string `env:"OPENROUTER_API_KEY"`
+	OpenRouterModel  string `env:"OPENROUTER_MODEL" envDefault:"google/gemma-2-9b-it"`
 
 	// Redis
 	RedisAddr               string        `env:"REDIS_ADDR"`
@@ -36,7 +40,7 @@ type Config struct {
 
 	// Instloader
 	InstloaderBaseURL string `env:"INSTLOADER_BASE_URL"`
-	
+
 	// ARC raiders
 	ARCRAidersBaseURL string `env:"ARC_RAIDERS_BASE_URL"`
 }

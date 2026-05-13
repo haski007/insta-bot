@@ -16,6 +16,7 @@ import (
 	"github.com/haski007/insta-bot/internal/clients/chatgpt"
 	"github.com/haski007/insta-bot/internal/clients/grok"
 	"github.com/haski007/insta-bot/internal/clients/instloader"
+	"github.com/haski007/insta-bot/internal/clients/openrouter"
 	"github.com/haski007/insta-bot/internal/clients/tiktokapi"
 	"github.com/haski007/insta-bot/internal/clients/youtube"
 	"github.com/haski007/insta-bot/pkg/graceful"
@@ -125,6 +126,17 @@ func Run(ctx context.Context, args run.Args) error {
 		log.Warn("GROK_API_KEY is not set, Grok integration disabled")
 	}
 
+	var openRouterSrv *openrouter.Service
+	if cfg.OpenRouterAPIKey != "" {
+		openRouterSrv, err = openrouter.NewService(cfg.OpenRouterAPIKey, cfg.OpenRouterModel)
+		if err != nil {
+			return fmt.Errorf("openrouter service err: %w", err)
+		}
+		log.Infof("openrouter client created with model: %s", cfg.OpenRouterModel)
+	} else {
+		log.Warn("OPENROUTER_API_KEY is not set, Ukraine anglicism monitor disabled")
+	}
+
 	// ---> ARC raiders
 	arcRaidersURL, err := url.Parse(cfg.ARCRAidersBaseURL)
 	if err != nil {
@@ -134,7 +146,6 @@ func Run(ctx context.Context, args run.Args) error {
 	if err != nil {
 		return fmt.Errorf("new ARC raiders client err: %w", err)
 	}
-
 
 	botSrv := listener.NewInstaBotService(
 		ctx,
@@ -149,6 +160,7 @@ func Run(ctx context.Context, args run.Args) error {
 		nil,
 		chatGptSrv,
 		grokSrv,
+		openRouterSrv,
 		arcRaidersClient,
 	).SetLogger(log)
 

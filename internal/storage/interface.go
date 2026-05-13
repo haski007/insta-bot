@@ -60,6 +60,11 @@ type Storage interface {
 	UnsubscribeChatToARC(chatID int64) error
 	GetAllARCSubscribedChats() ([]int64, error)
 
+	// Ukraine / anglicisms (OpenRouter)
+	SubscribeChatToUkraineForUkrainians(chatID int64) error
+	UnsubscribeChatFromUkraineForUkrainians(chatID int64) error
+	IsChatSubscribedToUkraineForUkrainians(chatID int64) (bool, error)
+
 	IsReadOnly() (bool, error)
 }
 
