@@ -1,8 +1,6 @@
 module github.com/haski007/insta-bot
 
-go 1.23
-
-toolchain go1.23.0
+go 1.26.3
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.1
