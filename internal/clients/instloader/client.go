@@ -31,17 +31,18 @@ type PostInfo struct {
 }
 
 func (c *Client) GetPostInfo(shortcode string) (PostInfo, error) {
-	req := http.Request{
-		Method: http.MethodGet,
-		URL:    c.BaseURL,
-	}
-
-	req.URL.Path = "/media"
-	req.URL.RawQuery = url.Values{
+	reqURL := *c.BaseURL
+	reqURL.Path = "/media"
+	reqURL.RawQuery = url.Values{
 		"shortcode": {shortcode},
 	}.Encode()
 
-	resp, err := http.DefaultClient.Do(&req)
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	if err != nil {
+		return PostInfo{}, fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return PostInfo{}, fmt.Errorf("do request: %w", err)
 	}

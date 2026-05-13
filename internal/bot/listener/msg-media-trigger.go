@@ -147,7 +147,8 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 	}
 
 	// Send message with post info
-	caption := fmt.Sprintf("❤️ Likes: %d\n%s", postInfo.Likes, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+	// caption := fmt.Sprintf("❤️ Likes: %d\n%s", postInfo.Likes, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+	caption := ""
 
 	// Download and send video if it's a video post
 	if postInfo.IsVideo && postInfo.VideoURL != "" {
