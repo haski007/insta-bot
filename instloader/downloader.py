@@ -84,6 +84,11 @@ def create_instaloader():
     
     # Try loading session first (if path and username provided)
     if username and session_file:
+        if not os.path.isfile(session_file):
+            logger.warning(
+                f"INSTAGRAM_SESSION_FILE is not a readable file on disk: {session_file!r} "
+                f"(bind-mount host session into the container at this path, e.g. ./session.json:/data/session.json)"
+            )
         try:
             session_dir = os.path.dirname(session_file)
             if session_dir:

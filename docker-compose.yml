@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   redis:
     image: redis:alpine
@@ -37,7 +35,10 @@ services:
     ports:
       - "8003:8003"
     volumes:
+      # Persist saved session after successful login
       - instloader-data:/data
+      # Host file next to compose — without this, /data/session.json is empty inside the container
+      - ./session.json:/data/session.json:ro
 
 volumes:
   redis-data:
