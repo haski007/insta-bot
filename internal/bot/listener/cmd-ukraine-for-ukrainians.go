@@ -12,11 +12,12 @@ func (rcv *InstaBotService) cmdUkraineForUkrainiansSub(update tgbotapi.Update) {
 
 	if err := rcv.storage.SubscribeChatToUkraineForUkrainians(chatID); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansSub] subscribe")
-		_ = rcv.SendMessage(chatID, "could not subscribe to ukraine for ukrainians"+emoji.NoEntry)
+		_ = rcv.SendMessageWithoutMarkdown(chatID, "could not subscribe to ukraine for ukrainians"+emoji.NoEntry)
 		return
 	}
 
-	if err := rcv.SendMessage(chatID, "Увімкнено моніторинг англіцизмів у цьому чаті. Вимкнути: /unsub_ukraine_for_ukrainians"+emoji.Check); err != nil {
+	// Plain text: command contains underscores which break legacy Markdown.
+	if err := rcv.SendMessageWithoutMarkdown(chatID, "Увімкнено моніторинг англіцизмів у цьому чаті. Вимкнути: /unsub_ukraine_for_ukrainians"+emoji.Check); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansSub] send message")
 		_ = rcv.NotifyCreator(fmt.Sprintf("[cmdUkraineForUkrainiansSub] send: %s\n", err))
 	}
@@ -27,11 +28,11 @@ func (rcv *InstaBotService) cmdUkraineForUkrainiansUnsub(update tgbotapi.Update)
 
 	if err := rcv.storage.UnsubscribeChatFromUkraineForUkrainians(chatID); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansUnsub] unsubscribe")
-		_ = rcv.SendMessage(chatID, "could not unsubscribe from ukraine for ukrainians"+emoji.NoEntry)
+		_ = rcv.SendMessageWithoutMarkdown(chatID, "could not unsubscribe from ukraine for ukrainians"+emoji.NoEntry)
 		return
 	}
 
-	if err := rcv.SendMessage(chatID, "Моніторинг англіцизмів вимкнено"+emoji.Basket); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, "Моніторинг англіцизмів вимкнено"+emoji.Basket); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansUnsub] send message")
 		_ = rcv.NotifyCreator(fmt.Sprintf("[cmdUkraineForUkrainiansUnsub] send: %s\n", err))
 	}
