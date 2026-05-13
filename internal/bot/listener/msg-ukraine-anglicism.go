@@ -13,6 +13,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	if rcv.openRouter == nil || update.Message == nil {
 		return
 	}
+	rcv.log.Info("msgUkraineAnglicismIfNeeded I am here")
 	msg := update.Message
 	if msg.From != nil && msg.From.IsBot {
 		return
