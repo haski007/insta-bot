@@ -5,6 +5,7 @@ vendor/
 /build/insta-bot*
 
 .*
+!.github/
 *.json
 resources/*
 
