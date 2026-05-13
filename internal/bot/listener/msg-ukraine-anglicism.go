@@ -2,6 +2,8 @@ package listener
 
 import (
 	"context"
+	"html"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -9,11 +11,32 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// LLM returns markers like {{українське}}(було: англіцизм); we turn them into Telegram HTML.
+var ukraineAnglicismMarker = regexp.MustCompile(`\{\{([^}]+)\}\}\s*\(\s*було\s*:\s*([^)]+)\)`)
+
+func formatAnglicismRewrittenAsTelegramHTML(rewritten string) string {
+	var b strings.Builder
+	last := 0
+	for _, loc := range ukraineAnglicismMarker.FindAllStringSubmatchIndex(rewritten, -1) {
+		before := rewritten[last:loc[0]]
+		b.WriteString(html.EscapeString(before))
+		newW := rewritten[loc[2]:loc[3]]
+		oldW := rewritten[loc[4]:loc[5]]
+		b.WriteString("<s>")
+		b.WriteString(html.EscapeString(strings.TrimSpace(oldW)))
+		b.WriteString("</s> → <b>")
+		b.WriteString(html.EscapeString(strings.TrimSpace(newW)))
+		b.WriteString("</b>")
+		last = loc[1]
+	}
+	b.WriteString(html.EscapeString(rewritten[last:]))
+	return b.String()
+}
+
 func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) {
 	if rcv.openRouter == nil || update.Message == nil {
 		return
 	}
-	rcv.log.Info("msgUkraineAnglicismIfNeeded I am here")
 	msg := update.Message
 	if msg.From != nil && msg.From.IsBot {
 		return
@@ -53,9 +76,18 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		return
 	}
 
-	out := res.Rewritten
-	if err := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, out); err != nil {
-		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain")
-		_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyPlain: " + err.Error())
+	body := formatAnglicismRewrittenAsTelegramHTML(res.Rewritten)
+	out := body
+	if utf8.RuneCountInString(out) > 4000 {
+		r := []rune(out)
+		out = string(r[:3997]) + "…"
+	}
+
+	if err := rcv.ReplyHTML(msg.Chat.ID, msg.MessageID, out); err != nil {
+		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyHTML")
+		if err2 := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, res.Rewritten); err2 != nil {
+			rcv.log.WithError(err2).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain fallback")
+			_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyHTML: " + err.Error())
+		}
 	}
 }

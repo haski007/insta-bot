@@ -27,6 +27,15 @@ func (rcv *InstaBotService) ReplyPlain(chatID int64, messageID int, text string)
 	return err
 }
 
+// ReplyHTML sends a reply with Telegram HTML parse mode (escape user text before wrapping in tags).
+func (rcv *InstaBotService) ReplyHTML(chatID int64, messageID int, text string) error {
+	message := tgbotapi.NewMessage(chatID, text)
+	message.ParseMode = tgbotapi.ModeHTML
+	message.ReplyToMessageID = messageID
+	_, err := rcv.bot.Send(message)
+	return err
+}
+
 func (rcv *InstaBotService) ReplyAudio(chatID int64, messageID int, audio tgbotapi.AudioConfig) error {
 	message := tgbotapi.NewMessage(chatID, "")
 	message.ReplyToMessageID = messageID
