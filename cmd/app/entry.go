@@ -162,6 +162,7 @@ func Run(ctx context.Context, args run.Args) error {
 		grokSrv,
 		openRouterSrv,
 		arcRaidersClient,
+		cfg.UkraineAnglicismMaxMessageRunes,
 	).SetLogger(log)
 
 	// reads from redis all the funcs that should be run in set time

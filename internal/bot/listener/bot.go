@@ -44,6 +44,8 @@ type InstaBotService struct {
 	openRouter       *openrouter.Service
 	arcRaidersClient *arcraiders.Client
 
+	ukraineAnglicismMaxInputRunes int
+
 	creatorID         int64
 	captionCharsLimit int
 	log               logrus.FieldLogger
@@ -69,22 +71,24 @@ func NewInstaBotService(
 	grokSrv *grok.Service,
 	openRouter *openrouter.Service,
 	arcRaidersClient *arcraiders.Client,
+	ukraineAnglicismMaxInputRunes int,
 ) *InstaBotService {
 	return &InstaBotService{
-		bot:               botApi,
-		instloaderApi:     instloaderApi,
-		creatorID:         creatorID,
-		updates:           updatesChan,
-		ctx:               ctx,
-		captionCharsLimit: captionCharsLimit,
-		tiktokApi:         tiktokApi,
-		youtubeApi:        youtubeApi,
-		storage:           storage,
-		calendar:          calendarSrv,
-		gpt:               gpt,
-		grokSrv:           grokSrv,
-		openRouter:        openRouter,
-		arcRaidersClient:  arcRaidersClient,
+		bot:                           botApi,
+		instloaderApi:                 instloaderApi,
+		creatorID:                     creatorID,
+		updates:                       updatesChan,
+		ctx:                           ctx,
+		captionCharsLimit:             captionCharsLimit,
+		tiktokApi:                     tiktokApi,
+		youtubeApi:                    youtubeApi,
+		storage:                       storage,
+		calendar:                      calendarSrv,
+		gpt:                           gpt,
+		grokSrv:                       grokSrv,
+		openRouter:                    openRouter,
+		arcRaidersClient:              arcRaidersClient,
+		ukraineAnglicismMaxInputRunes: ukraineAnglicismMaxInputRunes,
 	}
 }
 

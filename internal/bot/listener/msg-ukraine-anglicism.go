@@ -50,6 +50,10 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		return
 	}
 
+	if rcv.ukraineAnglicismMaxInputRunes > 0 && utf8.RuneCountInString(text) > rcv.ukraineAnglicismMaxInputRunes {
+		return
+	}
+
 	subscribed, err := rcv.storage.IsChatSubscribedToUkraineForUkrainians(msg.Chat.ID)
 	if err != nil {
 		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] IsChatSubscribedToUkraineForUkrainians")
@@ -69,11 +73,6 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 				return
 			}
 		}
-	}
-
-	if utf8.RuneCountInString(text) > 3500 {
-		r := []rune(text)
-		text = string(r[:3500])
 	}
 
 	ctx, cancel := context.WithTimeout(rcv.ctx, 50*time.Second)

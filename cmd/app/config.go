@@ -25,6 +25,8 @@ type Config struct {
 	// OpenRouter (cheap models for extras, e.g. anglicism hints)
 	OpenRouterAPIKey string `env:"OPENROUTER_API_KEY"`
 	OpenRouterModel  string `env:"OPENROUTER_MODEL" envDefault:"google/gemma-2-9b-it"`
+	// Max runes per message to send to anglicism LLM; longer messages are skipped (no API call).
+	UkraineAnglicismMaxMessageRunes int `env:"UKRAINE_ANGLICISM_MAX_MESSAGE_RUNES" envDefault:"1000"`
 
 	// Redis
 	RedisAddr               string        `env:"REDIS_ADDR"`
