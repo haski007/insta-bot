@@ -64,6 +64,9 @@ type Storage interface {
 	SubscribeChatToUkraineForUkrainians(chatID int64) error
 	UnsubscribeChatFromUkraineForUkrainians(chatID int64) error
 	IsChatSubscribedToUkraineForUkrainians(chatID int64) (bool, error)
+	UkraineAnglicismIgnoreAdd(chatID int64, username string) error
+	UkraineAnglicismIgnoreRemove(chatID int64, username string) error
+	UkraineAnglicismIgnoreContains(chatID int64, username string) (bool, error)
 
 	IsReadOnly() (bool, error)
 }

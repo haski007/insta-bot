@@ -11,7 +11,11 @@ func (r *redisClient) SubscribeChatToUkraineForUkrainians(chatID int64) error {
 }
 
 func (r *redisClient) UnsubscribeChatFromUkraineForUkrainians(chatID int64) error {
-	return r.conn.SRem(r.keyFromChatID(ukraineForUkrainiansSubKey, chatID), chatID).Err()
+	if err := r.conn.SRem(r.keyFromChatID(ukraineForUkrainiansSubKey, chatID), chatID).Err(); err != nil {
+		return fmt.Errorf("redis SRem ukr sub: %w", err)
+	}
+	_ = r.UkraineAnglicismIgnorePurgeChat(chatID)
+	return nil
 }
 
 func (r *redisClient) IsChatSubscribedToUkraineForUkrainians(chatID int64) (bool, error) {

@@ -141,6 +141,11 @@ func (rcv *InstaBotService) StartPool() error {
 			case command == "unsub_ukraine_for_ukrainians":
 				go rcv.cmdUkraineForUkrainiansUnsub(update)
 
+			case command == "ignore":
+				go rcv.cmdUkraineAnglicismIgnore(update)
+			case command == "unignore":
+				go rcv.cmdUkraineAnglicismUnignore(update)
+
 			case command == "sum":
 				safego.New(func() {
 					rcv.cmdSum(update)

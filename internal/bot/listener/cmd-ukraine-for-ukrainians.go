@@ -8,6 +8,10 @@ import (
 )
 
 func (rcv *InstaBotService) cmdUkraineForUkrainiansSub(update tgbotapi.Update) {
+	if !rcv.IsCreator(update.Message.From.ID) {
+		_ = rcv.SendMessageWithoutMarkdown(update.Message.Chat.ID, "Цю команду може використовувати лише власник бота."+emoji.NoEntry)
+		return
+	}
 	chatID := update.Message.Chat.ID
 
 	if err := rcv.storage.SubscribeChatToUkraineForUkrainians(chatID); err != nil {
@@ -17,13 +21,17 @@ func (rcv *InstaBotService) cmdUkraineForUkrainiansSub(update tgbotapi.Update) {
 	}
 
 	// Plain text: command contains underscores which break legacy Markdown.
-	if err := rcv.SendMessageWithoutMarkdown(chatID, "Увімкнено моніторинг англіцизмів у цьому чаті. Вимкнути: /unsub_ukraine_for_ukrainians"+emoji.Check); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, "Увімкнено моніторинг англіцизмів у цьому чаті. Ігнор користувача: /ignore @нік. Вимкнути моніторинг: /unsub_ukraine_for_ukrainians"+emoji.Check); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansSub] send message")
 		_ = rcv.NotifyCreator(fmt.Sprintf("[cmdUkraineForUkrainiansSub] send: %s\n", err))
 	}
 }
 
 func (rcv *InstaBotService) cmdUkraineForUkrainiansUnsub(update tgbotapi.Update) {
+	if !rcv.IsCreator(update.Message.From.ID) {
+		_ = rcv.SendMessageWithoutMarkdown(update.Message.Chat.ID, "Цю команду може використовувати лише власник бота."+emoji.NoEntry)
+		return
+	}
 	chatID := update.Message.Chat.ID
 
 	if err := rcv.storage.UnsubscribeChatFromUkraineForUkrainians(chatID); err != nil {
@@ -32,7 +40,7 @@ func (rcv *InstaBotService) cmdUkraineForUkrainiansUnsub(update tgbotapi.Update)
 		return
 	}
 
-	if err := rcv.SendMessageWithoutMarkdown(chatID, "Моніторинг англіцизмів вимкнено"+emoji.Basket); err != nil {
+	if err := rcv.SendMessageWithoutMarkdown(chatID, "Моніторинг англіцизмів вимкнено. Список /ignore для цього чату скинуто."+emoji.Basket); err != nil {
 		rcv.log.WithError(err).Error("[cmdUkraineForUkrainiansUnsub] send message")
 		_ = rcv.NotifyCreator(fmt.Sprintf("[cmdUkraineForUkrainiansUnsub] send: %s\n", err))
 	}

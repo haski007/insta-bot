@@ -59,6 +59,18 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		return
 	}
 
+	if msg.From != nil {
+		un := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(msg.From.UserName)), "@")
+		if un != "" {
+			ignored, err := rcv.storage.UkraineAnglicismIgnoreContains(msg.Chat.ID, un)
+			if err != nil {
+				rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] UkraineAnglicismIgnoreContains")
+			} else if ignored {
+				return
+			}
+		}
+	}
+
 	if utf8.RuneCountInString(text) > 3500 {
 		r := []rune(text)
 		text = string(r[:3500])
