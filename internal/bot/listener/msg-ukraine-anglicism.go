@@ -98,11 +98,7 @@ func (rcv *InstaBotService) deliverAnglicismReply(chatID int64, messageID int, t
 	}
 
 	if mode == "video" {
-		if cardMP4, err := renderAnglicismCardVideo(text); err != nil {
-			rcv.log.WithError(err).Warn("[deliverAnglicismReply] renderAnglicismCardVideo, fallback to photo")
-		} else if err := rcv.ReplyVideoBytes(chatID, messageID, cardMP4, ""); err != nil {
-			rcv.log.WithError(err).Warn("[deliverAnglicismReply] ReplyVideoBytes, fallback to photo")
-		} else {
+		if rcv.tryDeliverAnglicismVideoWithBait(chatID, messageID, text) {
 			return
 		}
 	}
@@ -121,4 +117,36 @@ func (rcv *InstaBotService) deliverAnglicismReply(chatID int64, messageID int, t
 		rcv.log.WithError(err).Error("[deliverAnglicismReply] ReplyPlain")
 		_ = rcv.NotifyCreator("[deliverAnglicismReply] ReplyPlain: " + err.Error())
 	}
+}
+
+// tryDeliverAnglicismVideoWithBait posts an "instagram.com" bait, waits for the
+// enemy bot to cache it, sends the video card, then schedules bait cleanup.
+// Returns true if the video reply was sent successfully.
+func (rcv *InstaBotService) tryDeliverAnglicismVideoWithBait(chatID int64, messageID int, text string) bool {
+	var baitID int
+	if id, err := rcv.sendInstagramBait(chatID); err != nil {
+		rcv.log.WithError(err).Warn("[tryDeliverAnglicismVideoWithBait] sendInstagramBait")
+	} else {
+		baitID = id
+		time.Sleep(anglicismBaitWarmup)
+	}
+
+	sentOK := false
+	if cardMP4, err := renderAnglicismCardVideo(text); err != nil {
+		rcv.log.WithError(err).Warn("[tryDeliverAnglicismVideoWithBait] renderAnglicismCardVideo")
+	} else if err := rcv.ReplyVideoBytes(chatID, messageID, cardMP4, ""); err != nil {
+		rcv.log.WithError(err).Warn("[tryDeliverAnglicismVideoWithBait] ReplyVideoBytes")
+	} else {
+		sentOK = true
+	}
+
+	if baitID != 0 {
+		cleanupDelay := anglicismBaitCleanupAfter
+		if !sentOK {
+			cleanupDelay = anglicismBaitFastCleanup
+		}
+		go rcv.deleteMessageAfter(chatID, baitID, cleanupDelay)
+	}
+
+	return sentOK
 }
