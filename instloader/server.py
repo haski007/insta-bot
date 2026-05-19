@@ -1,5 +1,11 @@
 from fastapi import FastAPI, Query, HTTPException
-from .downloader import get_post_info, create_instaloader
+from .downloader import (
+    get_post_info,
+    create_instaloader,
+    has_valid_session,
+    get_sessionid,
+    session_validation_error,
+)
 import logging
 import os
 import sys
@@ -25,16 +31,24 @@ async def startup_event():
         logger.info("=== INSTALOADER STARTUP ===")
         logger.info("Initializing Instaloader...")
         loader = create_instaloader()
+        session_file = os.getenv("INSTAGRAM_SESSION_FILE")
+        username = os.getenv("INSTAGRAM_USERNAME")
 
-        if loader.context.is_logged_in:
-            logger.info("✅ Instaloader is LOGGED IN and ready to use")
+        if has_valid_session(loader):
+            logger.info(
+                f"✅ Valid Instagram session (sessionid length={len(get_sessionid(loader))})"
+            )
             logger.info("=== INSTALOADER STARTUP COMPLETE ===")
             return
 
+        reason = session_validation_error(
+            loader, username=username, session_file=session_file
+        )
+        logger.error(f"❌ Invalid Instagram session — {reason}")
         logger.error(
-            "❌ Instaloader is NOT logged in — service will not start without a valid session or login. "
-            "Check: ./session.json mounted to INSTAGRAM_SESSION_FILE, INSTAGRAM_USERNAME matches the session, "
-            "INSTAGRAM_PASSWORD if no session, proxy/IP if Instagram blocks the host."
+            "Service will not start. Password login on VPS is often blocked by Instagram. "
+            "Import session from your PC: secrets/session.json or INSTAGRAM_SESSIONID in .env. "
+            "See secrets/README.md and scripts/export_instagram_session.py"
         )
         # Emergency dev only: INSTLOADER_ALLOW_ANONYMOUS=true
         if _env_bool("INSTLOADER_ALLOW_ANONYMOUS", default=False):
@@ -47,7 +61,10 @@ async def startup_event():
         sys.exit(1)
     except Exception as e:
         logger.error(f"❌ Failed to initialize Instaloader: {e}")
-        # Continue running the server even if Instaloader fails to initialize
+        if _env_bool("INSTLOADER_ALLOW_ANONYMOUS", default=False):
+            logger.warning("INSTLOADER_ALLOW_ANONYMOUS=true — continuing despite init failure")
+            return
+        sys.exit(1)
 
 
 @app.get("/")

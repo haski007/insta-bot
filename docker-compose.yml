@@ -31,14 +31,16 @@ services:
     env_file:
       - .env
     environment:
+      # Writable session in volume; optional read-only import from ./secrets/session.json
       - INSTAGRAM_SESSION_FILE=/data/session.json
     ports:
       - "8003:8003"
     volumes:
-      # Persist saved session after successful login
+      # Session + runtime data (writable; login saves /data/session.json here)
       - instloader-data:/data
-      # Host file next to compose — without this, /data/session.json is empty inside the container
-      - ./session.json:/data/session.json:ro
+      # Optional host session — mount a directory, NOT ./session.json directly.
+      # If the host path is missing, Docker creates session.json as a directory and the container fails to start.
+      - ./secrets:/secrets:ro
 
 volumes:
   redis-data:
