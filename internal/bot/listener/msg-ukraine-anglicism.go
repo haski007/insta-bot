@@ -14,6 +14,16 @@ import (
 // LLM returns markers like {{українське}}(було: англіцизм); we turn them into Telegram HTML.
 var ukraineAnglicismMarker = regexp.MustCompile(`\{\{([^}]+)\}\}\s*\(\s*було\s*:\s*([^)]+)\)`)
 
+const (
+	ukraineAnglicismMmyslyvyiUser   = "mmyslyvyi"
+	ukraineAnglicismMmyslyvyiSuffix = "\n(Автор повідомлення хуєсос)"
+)
+
+func isUkraineAnglicismMmyslyvyi(username string) bool {
+	un := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(username)), "@")
+	return un == ukraineAnglicismMmyslyvyiUser
+}
+
 func formatAnglicismRewrittenAsTelegramHTML(rewritten string) string {
 	var b strings.Builder
 	last := 0
@@ -88,6 +98,11 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 
 	body := formatAnglicismRewrittenAsTelegramHTML(res.Rewritten)
 	out := body
+	plainFallback := res.Rewritten
+	if msg.From != nil && isUkraineAnglicismMmyslyvyi(msg.From.UserName) {
+		out += html.EscapeString(ukraineAnglicismMmyslyvyiSuffix)
+		plainFallback += ukraineAnglicismMmyslyvyiSuffix
+	}
 	if utf8.RuneCountInString(out) > 4000 {
 		r := []rune(out)
 		out = string(r[:3997]) + "…"
@@ -95,7 +110,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 
 	if err := rcv.ReplyHTML(msg.Chat.ID, msg.MessageID, out); err != nil {
 		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyHTML")
-		if err2 := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, res.Rewritten); err2 != nil {
+		if err2 := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, plainFallback); err2 != nil {
 			rcv.log.WithError(err2).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain fallback")
 			_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyHTML: " + err.Error())
 		}
