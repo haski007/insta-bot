@@ -27,9 +27,13 @@ type Config struct {
 	OpenRouterModel  string `env:"OPENROUTER_MODEL" envDefault:"google/gemma-2-9b-it"`
 	// Max runes per message to send to anglicism LLM; longer messages are skipped (no API call).
 	UkraineAnglicismMaxMessageRunes int `env:"UKRAINE_ANGLICISM_MAX_MESSAGE_RUNES" envDefault:"1000"`
-	// Delivery mode for anglicism replies: "video" | "photo" | "plain". Default is video.
+	// Delivery mode for anglicism replies:
+	//   "escalate" (default): plain → if deleted, photo → if deleted, video w/ IG bait.
+	//   "plain"   : plain text only.
+	//   "photo"   : photo card only.
+	//   "video"   : video card with IG bait only.
 	// Reasoning: enemy bot iteratively adds filters; switch via env without redeploy.
-	UkraineAnglicismDelivery string `env:"UKRAINE_ANGLICISM_DELIVERY" envDefault:"video"`
+	UkraineAnglicismDelivery string `env:"UKRAINE_ANGLICISM_DELIVERY" envDefault:"escalate"`
 
 	// Redis
 	RedisAddr               string        `env:"REDIS_ADDR"`

@@ -13,6 +13,10 @@ import (
 // LLM returns markers like {{українське}}(було: англіцизм); we keep only the Ukrainian replacement in the reply.
 var ukraineAnglicismMarker = regexp.MustCompile(`\{\{([^}]+)\}\}\s*\(\s*було\s*:\s*([^)]+)\)`)
 
+// Delay between sending an escalation step and checking if it was deleted by
+// the enemy bot.
+const anglicismDeleteCheckDelay = 1100 * time.Millisecond
+
 func formatAnglicismRewrittenPlain(rewritten string) string {
 	var b strings.Builder
 	last := 0
@@ -89,34 +93,106 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	rcv.deliverAnglicismReply(msg.Chat.ID, msg.MessageID, out)
 }
 
-// deliverAnglicismReply picks the delivery channel based on env (video|photo|plain)
-// and falls back through the chain on failure.
+// deliverAnglicismReply chooses delivery based on env mode:
+//   - "escalate" (default): plain → if deleted, photo → if deleted, video w/ IG bait
+//   - "plain"  : plain text only, no escalation
+//   - "photo"  : photo card only
+//   - "video"  : video card with IG bait only
 func (rcv *InstaBotService) deliverAnglicismReply(chatID int64, messageID int, text string) {
 	mode := strings.ToLower(strings.TrimSpace(rcv.ukraineAnglicismDelivery))
 	if mode == "" {
-		mode = "video"
+		mode = "escalate"
 	}
 
-	if mode == "video" {
-		if rcv.tryDeliverAnglicismVideoWithBait(chatID, messageID, text) {
+	switch mode {
+	case "plain":
+		rcv.sendAnglicismPlainBestEffort(chatID, text)
+	case "photo":
+		if !rcv.sendAnglicismPhotoCardBestEffort(chatID, messageID, text) {
+			rcv.sendAnglicismPlainBestEffort(chatID, text)
+		}
+	case "video":
+		if !rcv.tryDeliverAnglicismVideoWithBait(chatID, messageID, text) {
+			rcv.sendAnglicismPlainBestEffort(chatID, text)
+		}
+	default:
+		rcv.deliverAnglicismEscalating(chatID, messageID, text)
+	}
+}
+
+// deliverAnglicismEscalating sends plain text; if the enemy deletes it within
+// ~1s, escalates to photo, then to video with IG bait. Final fallback — a
+// repeat plain send (best-effort) so the chat is not left silent.
+func (rcv *InstaBotService) deliverAnglicismEscalating(chatID int64, messageID int, text string) {
+	if id, err := rcv.sendAnglicismPlain(chatID, text); err != nil {
+		rcv.log.WithError(err).Warn("[deliverAnglicismEscalating] sendAnglicismPlain")
+	} else {
+		time.Sleep(anglicismDeleteCheckDelay)
+		if rcv.isMessageAlive(chatID, id) {
 			return
 		}
+		rcv.log.Info("[deliverAnglicismEscalating] plain deleted, escalating to photo")
 	}
 
-	if mode == "video" || mode == "photo" {
-		if cardPNG, err := renderAnglicismCard(text); err != nil {
-			rcv.log.WithError(err).Warn("[deliverAnglicismReply] renderAnglicismCard, fallback to plain")
-		} else if err := rcv.ReplyPhoto(chatID, messageID, cardPNG, ""); err != nil {
-			rcv.log.WithError(err).Warn("[deliverAnglicismReply] ReplyPhoto, fallback to plain")
-		} else {
+	if id, err := rcv.sendAnglicismPhotoCard(chatID, messageID, text); err != nil {
+		rcv.log.WithError(err).Warn("[deliverAnglicismEscalating] sendAnglicismPhotoCard")
+	} else {
+		time.Sleep(anglicismDeleteCheckDelay)
+		if rcv.isMessageAlive(chatID, id) {
 			return
 		}
+		rcv.log.Info("[deliverAnglicismEscalating] photo deleted, escalating to video")
 	}
 
-	if err := rcv.ReplyPlain(chatID, messageID, text); err != nil {
-		rcv.log.WithError(err).Error("[deliverAnglicismReply] ReplyPlain")
-		_ = rcv.NotifyCreator("[deliverAnglicismReply] ReplyPlain: " + err.Error())
+	if rcv.tryDeliverAnglicismVideoWithBait(chatID, messageID, text) {
+		return
 	}
+
+	rcv.sendAnglicismPlainBestEffort(chatID, text)
+}
+
+// sendAnglicismPlain sends a plain (non-reply) text message and returns its ID.
+func (rcv *InstaBotService) sendAnglicismPlain(chatID int64, text string) (int, error) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	sent, err := rcv.bot.Send(msg)
+	if err != nil {
+		return 0, err
+	}
+	return sent.MessageID, nil
+}
+
+func (rcv *InstaBotService) sendAnglicismPlainBestEffort(chatID int64, text string) {
+	if _, err := rcv.sendAnglicismPlain(chatID, text); err != nil {
+		rcv.log.WithError(err).Error("[sendAnglicismPlainBestEffort] send")
+		_ = rcv.NotifyCreator("[sendAnglicismPlainBestEffort] send: " + err.Error())
+	}
+}
+
+// sendAnglicismPhotoCard renders the text as a card image and sends it as a
+// reply to the offending message; returns the sent message ID.
+func (rcv *InstaBotService) sendAnglicismPhotoCard(chatID int64, replyToID int, text string) (int, error) {
+	cardPNG, err := renderAnglicismCard(text)
+	if err != nil {
+		return 0, err
+	}
+	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
+		Name:  "card.png",
+		Bytes: cardPNG,
+	})
+	photo.ReplyToMessageID = replyToID
+	sent, err := rcv.bot.Send(photo)
+	if err != nil {
+		return 0, err
+	}
+	return sent.MessageID, nil
+}
+
+func (rcv *InstaBotService) sendAnglicismPhotoCardBestEffort(chatID int64, replyToID int, text string) bool {
+	if _, err := rcv.sendAnglicismPhotoCard(chatID, replyToID, text); err != nil {
+		rcv.log.WithError(err).Warn("[sendAnglicismPhotoCardBestEffort] send")
+		return false
+	}
+	return true
 }
 
 // tryDeliverAnglicismVideoWithBait posts an "instagram.com" bait, waits for the

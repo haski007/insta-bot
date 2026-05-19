@@ -39,6 +39,32 @@ func (rcv *InstaBotService) ReactPoop(chatID int64, messageID int) error {
 	return err
 }
 
+// isMessageAlive returns true if the message still exists in the chat. It
+// performs a no-op setMessageReaction (clear reactions) — if the API returns
+// "message not found" the message has been deleted. Anything else is treated
+// as "alive" to avoid false-positive escalations.
+func (rcv *InstaBotService) isMessageAlive(chatID int64, messageID int) bool {
+	params := make(tgbotapi.Params)
+	if err := params.AddFirstValid("chat_id", chatID); err != nil {
+		return true
+	}
+	params.AddNonZero("message_id", messageID)
+	if err := params.AddInterface("reaction", []reactionTypeEmoji{}); err != nil {
+		return true
+	}
+	if _, err := rcv.bot.MakeRequest("setMessageReaction", params); err != nil {
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "message to react not found") ||
+			strings.Contains(errStr, "message not found") ||
+			strings.Contains(errStr, "message_id_invalid") ||пшев 
+			strings.Contains(errStr, "message to edit not found") {
+			return false
+		}
+		rcv.log.WithError(err).Debug("[isMessageAlive] unexpected error, assume alive")
+	}
+	return true
+}
+
 func (rcv *InstaBotService) reactMmyslyvyiIfNeeded(msg *tgbotapi.Message) {
 	if msg == nil || msg.From == nil || msg.From.IsBot {
 		return
