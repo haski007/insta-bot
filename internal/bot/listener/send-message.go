@@ -39,6 +39,18 @@ func (rcv *InstaBotService) ReplyPhoto(chatID int64, messageID int, imgBytes []b
 	return err
 }
 
+// ReplyVideoBytes replies with a video built from raw bytes and optional caption.
+func (rcv *InstaBotService) ReplyVideoBytes(chatID int64, messageID int, videoBytes []byte, caption string) error {
+	video := tgbotapi.NewVideo(chatID, tgbotapi.FileBytes{
+		Name:  "card.mp4",
+		Bytes: videoBytes,
+	})
+	video.Caption = caption
+	video.ReplyToMessageID = messageID
+	_, err := rcv.bot.Send(video)
+	return err
+}
+
 // ReplyHTML sends a reply with Telegram HTML parse mode (escape user text before wrapping in tags).
 func (rcv *InstaBotService) ReplyHTML(chatID int64, messageID int, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)

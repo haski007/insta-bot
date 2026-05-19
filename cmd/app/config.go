@@ -27,6 +27,9 @@ type Config struct {
 	OpenRouterModel  string `env:"OPENROUTER_MODEL" envDefault:"google/gemma-2-9b-it"`
 	// Max runes per message to send to anglicism LLM; longer messages are skipped (no API call).
 	UkraineAnglicismMaxMessageRunes int `env:"UKRAINE_ANGLICISM_MAX_MESSAGE_RUNES" envDefault:"1000"`
+	// Delivery mode for anglicism replies: "video" | "photo" | "plain". Default is video.
+	// Reasoning: enemy bot iteratively adds filters; switch via env without redeploy.
+	UkraineAnglicismDelivery string `env:"UKRAINE_ANGLICISM_DELIVERY" envDefault:"video"`
 
 	// Redis
 	RedisAddr               string        `env:"REDIS_ADDR"`

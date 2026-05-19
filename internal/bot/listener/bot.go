@@ -45,6 +45,7 @@ type InstaBotService struct {
 	arcRaidersClient *arcraiders.Client
 
 	ukraineAnglicismMaxInputRunes int
+	ukraineAnglicismDelivery      string
 
 	creatorID         int64
 	captionCharsLimit int
@@ -72,6 +73,7 @@ func NewInstaBotService(
 	openRouter *openrouter.Service,
 	arcRaidersClient *arcraiders.Client,
 	ukraineAnglicismMaxInputRunes int,
+	ukraineAnglicismDelivery string,
 ) *InstaBotService {
 	return &InstaBotService{
 		bot:                           botApi,
@@ -89,6 +91,7 @@ func NewInstaBotService(
 		openRouter:                    openRouter,
 		arcRaidersClient:              arcRaidersClient,
 		ukraineAnglicismMaxInputRunes: ukraineAnglicismMaxInputRunes,
+		ukraineAnglicismDelivery:      ukraineAnglicismDelivery,
 	}
 }
 

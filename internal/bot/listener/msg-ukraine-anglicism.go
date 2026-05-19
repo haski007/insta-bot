@@ -86,17 +86,39 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		out += ukraineAnglicismMmyslyvyiSuffix
 	}
 
-	cardPNG, cardErr := renderAnglicismCard(out)
-	if cardErr != nil {
-		rcv.log.WithError(cardErr).Warn("[msgUkraineAnglicismIfNeeded] renderAnglicismCard, fallback to ReplyPlain")
-	} else if err := rcv.ReplyPhoto(msg.Chat.ID, msg.MessageID, cardPNG, ""); err != nil {
-		rcv.log.WithError(err).Warn("[msgUkraineAnglicismIfNeeded] ReplyPhoto, fallback to ReplyPlain")
-	} else {
-		return
+	rcv.deliverAnglicismReply(msg.Chat.ID, msg.MessageID, out)
+}
+
+// deliverAnglicismReply picks the delivery channel based on env (video|photo|plain)
+// and falls back through the chain on failure.
+func (rcv *InstaBotService) deliverAnglicismReply(chatID int64, messageID int, text string) {
+	mode := strings.ToLower(strings.TrimSpace(rcv.ukraineAnglicismDelivery))
+	if mode == "" {
+		mode = "video"
 	}
 
-	if err := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, out); err != nil {
-		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain")
-		_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyPlain: " + err.Error())
+	if mode == "video" {
+		if cardMP4, err := renderAnglicismCardVideo(text); err != nil {
+			rcv.log.WithError(err).Warn("[deliverAnglicismReply] renderAnglicismCardVideo, fallback to photo")
+		} else if err := rcv.ReplyVideoBytes(chatID, messageID, cardMP4, ""); err != nil {
+			rcv.log.WithError(err).Warn("[deliverAnglicismReply] ReplyVideoBytes, fallback to photo")
+		} else {
+			return
+		}
+	}
+
+	if mode == "video" || mode == "photo" {
+		if cardPNG, err := renderAnglicismCard(text); err != nil {
+			rcv.log.WithError(err).Warn("[deliverAnglicismReply] renderAnglicismCard, fallback to plain")
+		} else if err := rcv.ReplyPhoto(chatID, messageID, cardPNG, ""); err != nil {
+			rcv.log.WithError(err).Warn("[deliverAnglicismReply] ReplyPhoto, fallback to plain")
+		} else {
+			return
+		}
+	}
+
+	if err := rcv.ReplyPlain(chatID, messageID, text); err != nil {
+		rcv.log.WithError(err).Error("[deliverAnglicismReply] ReplyPlain")
+		_ = rcv.NotifyCreator("[deliverAnglicismReply] ReplyPlain: " + err.Error())
 	}
 }
