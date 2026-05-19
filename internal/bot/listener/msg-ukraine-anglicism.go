@@ -22,9 +22,8 @@ func formatAnglicismRewrittenAsTelegramHTML(rewritten string) string {
 		b.WriteString(html.EscapeString(before))
 		newW := rewritten[loc[2]:loc[3]]
 		oldW := rewritten[loc[4]:loc[5]]
-		b.WriteString("<s>")
 		b.WriteString(html.EscapeString(strings.TrimSpace(oldW)))
-		b.WriteString("</s> → <b>")
+		b.WriteString(" — <b>")
 		b.WriteString(html.EscapeString(strings.TrimSpace(newW)))
 		b.WriteString("</b>")
 		last = loc[1]
