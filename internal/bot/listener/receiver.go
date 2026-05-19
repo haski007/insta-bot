@@ -31,13 +31,15 @@ func (rcv *InstaBotService) StartPool() error {
 
 		// Check if user is in fuck list delete his message
 		if update.Message != nil {
-			if arrayContains(whoToFuck, strings.TrimPrefix(update.Message.From.UserName, "@")) {
+			if update.Message.From != nil &&
+				arrayContains(whoToFuck, strings.TrimPrefix(update.Message.From.UserName, "@")) {
 				err := rcv.DeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 				if err != nil {
 					rcv.log.WithError(err).Error("DeleteMessage")
 				}
 				continue
 			}
+			go rcv.reactMmyslyvyiIfNeeded(update.Message)
 		}
 
 		if update.PollAnswer != nil {

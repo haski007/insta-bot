@@ -2,7 +2,6 @@ package listener
 
 import (
 	"context"
-	"html"
 	"regexp"
 	"strings"
 	"time"
@@ -11,34 +10,20 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// LLM returns markers like {{українське}}(було: англіцизм); we turn them into Telegram HTML.
+// LLM returns markers like {{українське}}(було: англіцизм); we keep only the Ukrainian replacement in the reply.
 var ukraineAnglicismMarker = regexp.MustCompile(`\{\{([^}]+)\}\}\s*\(\s*було\s*:\s*([^)]+)\)`)
 
-const (
-	ukraineAnglicismMmyslyvyiUser   = "mmyslyvyi"
-	ukraineAnglicismMmyslyvyiSuffix = "\n(Автор повідомлення хуєсос)"
-)
-
-func isUkraineAnglicismMmyslyvyi(username string) bool {
-	un := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(username)), "@")
-	return un == ukraineAnglicismMmyslyvyiUser
-}
-
-func formatAnglicismRewrittenAsTelegramHTML(rewritten string) string {
+func formatAnglicismRewrittenPlain(rewritten string) string {
 	var b strings.Builder
 	last := 0
 	for _, loc := range ukraineAnglicismMarker.FindAllStringSubmatchIndex(rewritten, -1) {
 		before := rewritten[last:loc[0]]
-		b.WriteString(html.EscapeString(before))
+		b.WriteString(before)
 		newW := rewritten[loc[2]:loc[3]]
-		oldW := rewritten[loc[4]:loc[5]]
-		b.WriteString(html.EscapeString(strings.TrimSpace(oldW)))
-		b.WriteString(" — <b>")
-		b.WriteString(html.EscapeString(strings.TrimSpace(newW)))
-		b.WriteString("</b>")
+		b.WriteString(strings.TrimSpace(newW))
 		last = loc[1]
 	}
-	b.WriteString(html.EscapeString(rewritten[last:]))
+	b.WriteString(rewritten[last:])
 	return b.String()
 }
 
@@ -96,23 +81,22 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		return
 	}
 
-	body := formatAnglicismRewrittenAsTelegramHTML(res.Rewritten)
-	out := body
-	plainFallback := res.Rewritten
-	if msg.From != nil && isUkraineAnglicismMmyslyvyi(msg.From.UserName) {
-		out += html.EscapeString(ukraineAnglicismMmyslyvyiSuffix)
-		plainFallback += ukraineAnglicismMmyslyvyiSuffix
-	}
-	if utf8.RuneCountInString(out) > 4000 {
-		r := []rune(out)
-		out = string(r[:3997]) + "…"
+	out := formatAnglicismRewrittenPlain(res.Rewritten)
+	if msg.From != nil && isMmyslyvyi(msg.From.UserName) {
+		out += ukraineAnglicismMmyslyvyiSuffix
 	}
 
-	if err := rcv.ReplyHTML(msg.Chat.ID, msg.MessageID, out); err != nil {
-		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyHTML")
-		if err2 := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, plainFallback); err2 != nil {
-			rcv.log.WithError(err2).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain fallback")
-			_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyHTML: " + err.Error())
-		}
+	cardPNG, cardErr := renderAnglicismCard(out)
+	if cardErr != nil {
+		rcv.log.WithError(cardErr).Warn("[msgUkraineAnglicismIfNeeded] renderAnglicismCard, fallback to ReplyPlain")
+	} else if err := rcv.ReplyPhoto(msg.Chat.ID, msg.MessageID, cardPNG, ""); err != nil {
+		rcv.log.WithError(err).Warn("[msgUkraineAnglicismIfNeeded] ReplyPhoto, fallback to ReplyPlain")
+	} else {
+		return
+	}
+
+	if err := rcv.ReplyPlain(msg.Chat.ID, msg.MessageID, out); err != nil {
+		rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] ReplyPlain")
+		_ = rcv.NotifyCreator("[msgUkraineAnglicismIfNeeded] ReplyPlain: " + err.Error())
 	}
 }

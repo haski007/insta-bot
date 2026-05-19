@@ -27,6 +27,18 @@ func (rcv *InstaBotService) ReplyPlain(chatID int64, messageID int, text string)
 	return err
 }
 
+// ReplyPhoto replies with an image (raw PNG/JPEG bytes) and optional caption.
+func (rcv *InstaBotService) ReplyPhoto(chatID int64, messageID int, imgBytes []byte, caption string) error {
+	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
+		Name:  "card.png",
+		Bytes: imgBytes,
+	})
+	photo.Caption = caption
+	photo.ReplyToMessageID = messageID
+	_, err := rcv.bot.Send(photo)
+	return err
+}
+
 // ReplyHTML sends a reply with Telegram HTML parse mode (escape user text before wrapping in tags).
 func (rcv *InstaBotService) ReplyHTML(chatID int64, messageID int, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
