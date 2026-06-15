@@ -56,7 +56,7 @@ func (rcv *InstaBotService) isMessageAlive(chatID int64, messageID int) bool {
 		errStr := strings.ToLower(err.Error())
 		if strings.Contains(errStr, "message to react not found") ||
 			strings.Contains(errStr, "message not found") ||
-			strings.Contains(errStr, "message_id_invalid") ||пшев 
+			strings.Contains(errStr, "message_id_invalid") ||
 			strings.Contains(errStr, "message to edit not found") {
 			return false
 		}

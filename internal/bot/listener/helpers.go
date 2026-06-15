@@ -9,6 +9,8 @@ func (rcv *InstaBotService) RedisMonitor() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
+	var lastReadonly *bool
+
 	for range ticker.C {
 		readonly, err := rcv.storage.IsReadOnly()
 		if err != nil {
@@ -16,11 +18,23 @@ func (rcv *InstaBotService) RedisMonitor() {
 			continue
 		}
 
+		if lastReadonly != nil && *lastReadonly == readonly {
+			continue
+		}
+
+		wasReadonly := lastReadonly != nil && *lastReadonly
+		v := readonly
+		lastReadonly = &v
+
 		if readonly {
 			ticker.Reset(6 * time.Hour)
-			rcv.log.Debugln("[RedisMonitor] redis is readonly")
-		} else {
-			rcv.log.Debugln("[RedisMonitor] redis is NOT readonly")
+			rcv.log.Warnln("[RedisMonitor] redis is readonly")
+			continue
+		}
+
+		ticker.Reset(time.Minute)
+		if wasReadonly {
+			rcv.log.Infoln("[RedisMonitor] redis is writable again")
 		}
 	}
 }
