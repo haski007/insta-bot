@@ -86,9 +86,6 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	}
 
 	out := formatAnglicismRewrittenPlain(res.Rewritten)
-	if msg.From != nil && isMmyslyvyi(msg.From.UserName) {
-		out += ukraineAnglicismMmyslyvyiSuffix
-	}
 
 	rcv.deliverAnglicismReply(msg.Chat.ID, msg.MessageID, out)
 }

@@ -68,6 +68,10 @@ type Storage interface {
 	UkraineAnglicismIgnoreRemove(chatID int64, username string) error
 	UkraineAnglicismIgnoreContains(chatID int64, username string) (bool, error)
 
+	FuckListAdd(username string) error
+	FuckListRemove(username string) error
+	FuckListContains(username string) (bool, error)
+
 	IsReadOnly() (bool, error)
 }
 
