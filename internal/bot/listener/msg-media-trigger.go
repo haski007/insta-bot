@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/haski007/insta-bot/internal/bot/model"
+	"github.com/haski007/insta-bot/internal/clients/instloader"
 	"github.com/haski007/insta-bot/pkg/file"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -17,6 +18,8 @@ import (
 
 const (
 	tmpDirPath = "./resources"
+	// Telegram media groups accept 2–10 items per album.
+	telegramAlbumMax = 10
 )
 
 var exprFindURL = regexp.MustCompile(`https?://[^\s]+`)
@@ -115,53 +118,44 @@ func truncateCaption(caption string, limit int) string {
 	return result
 }
 
-func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
-	chatID := update.Message.Chat.ID
-	messageID := update.Message.MessageID
-	url := exprFindURL.FindString(update.Message.Text)
-	fmt.Println("url", url)
-
-	// if update.Message.From.UserName == "dmlitvin" {
-	// 	rcv.Reply(chatID, messageID, "Хуй тобі, а не відео")
-	// 	return
-	// }
-
-	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
-		return
+func usableMediaItems(items []instloader.MediaItem) []instloader.MediaItem {
+	out := make([]instloader.MediaItem, 0, len(items))
+	for _, item := range items {
+		if item.IsVideo && item.VideoURL != "" {
+			out = append(out, item)
+			continue
+		}
+		if item.URL != "" {
+			out = append(out, item)
+		}
 	}
+	return out
+}
 
-	// Extract shortcode from the URL
-	shortcode, err := extractShortcode(url)
-	if err != nil {
-		rcv.log.WithError(err).Error("[msgInstagramTrigger] extract shortcode")
-		rcv.SendError(chatID, ErrInternalServerError)
-		return
+func (rcv *InstaBotService) sendInstagramFallback(chatID int64, postInfo instloader.PostInfo, isVideo bool) {
+	kind := "Post"
+	if isVideo {
+		kind = "Video"
 	}
-
-	// Get post info from Python microservice using the client
-	postInfo, err := rcv.instloaderApi.GetPostInfo(shortcode)
-	if err != nil {
-		rcv.log.WithError(err).Error("[msgInstagramTrigger] get post info from microservice")
-		rcv.SendError(chatID, ErrInternalServerError)
-		return
+	message := fmt.Sprintf("📸 Instagram %s\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
+		kind, postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
+	if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
 	}
+}
 
-	// Send message with post info
-	// caption := fmt.Sprintf("❤️ Likes: %d\n%s", postInfo.Likes, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-	caption := ""
-
-	// Download and send video if it's a video post
-	if postInfo.IsVideo && postInfo.VideoURL != "" {
-		// Download the video
-		videoFile, err := downloadVideo(postInfo.VideoURL)
+func (rcv *InstaBotService) sendSingleInstagramMedia(
+	chatID int64,
+	messageID int,
+	item instloader.MediaItem,
+	caption string,
+	postInfo instloader.PostInfo,
+) {
+	if item.IsVideo && item.VideoURL != "" {
+		videoFile, err := downloadVideo(item.VideoURL)
 		if err != nil {
 			rcv.log.WithError(err).Error("[msgInstagramTrigger] download video")
-			// Fallback to text message if download fails
-			message := fmt.Sprintf("📸 Instagram Video\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
-				postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-			if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
-				rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
-			}
+			rcv.sendInstagramFallback(chatID, postInfo, true)
 			return
 		}
 
@@ -171,47 +165,148 @@ func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
 
 		if err := rcv.ReplyVideo(chatID, messageID, videoConfig, caption); err != nil {
 			rcv.log.WithError(err).Error("[msgInstagramTrigger] reply video")
-			// Fallback to text message if video fails
-			message := fmt.Sprintf("📸 Instagram Video\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
-				postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-			if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
-				rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
-			}
+			rcv.sendInstagramFallback(chatID, postInfo, true)
 		}
-	} else {
-		// Handle non-video content (images)
-		if postInfo.URL != "" {
-			// Download the image
-			imageFile, err := downloadImage(postInfo.URL)
+		return
+	}
+
+	if item.URL == "" {
+		rcv.log.Errorf("[msgInstagramTrigger] no media URL available for post %s", postInfo.Shortcode)
+		return
+	}
+
+	imageFile, err := downloadImage(item.URL)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] download image")
+		rcv.sendInstagramFallback(chatID, postInfo, false)
+		return
+	}
+
+	photoConfig := tgbotapi.NewPhoto(chatID, imageFile)
+	photoConfig.Caption = caption
+	photoConfig.ReplyToMessageID = messageID
+
+	if _, err := rcv.bot.Send(photoConfig); err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] send photo")
+		rcv.sendInstagramFallback(chatID, postInfo, false)
+	}
+}
+
+func buildAlbumInputMedia(items []instloader.MediaItem, caption string) ([]interface{}, error) {
+	media := make([]interface{}, 0, len(items))
+	for i, item := range items {
+		if item.IsVideo && item.VideoURL != "" {
+			videoFile, err := downloadVideo(item.VideoURL)
 			if err != nil {
-				rcv.log.WithError(err).Error("[msgInstagramTrigger] download image")
-				// Fallback to text message if download fails
-				message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
-					postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-				if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
-					rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
-				}
-				return
+				return nil, fmt.Errorf("download carousel video %d: %w", i, err)
 			}
-
-			// Send the image with caption
-			photoConfig := tgbotapi.NewPhoto(chatID, imageFile)
-			photoConfig.Caption = caption
-			photoConfig.ReplyToMessageID = messageID
-
-			if _, err := rcv.bot.Send(photoConfig); err != nil {
-				rcv.log.WithError(err).Error("[msgInstagramTrigger] send photo")
-				// Fallback to text message if photo fails
-				message := fmt.Sprintf("📸 Instagram Post\n\n👤 @%s\n❤️ %d likes\n💬 %d comments\n\n%s",
-					postInfo.Owner, postInfo.Likes, postInfo.Comments, truncateCaption(postInfo.Caption, rcv.captionCharsLimit))
-				if err := rcv.SendMessageWithoutMarkdown(chatID, message); err != nil {
-					rcv.log.WithError(err).Error("[msgInstagramTrigger] send fallback message")
-				}
+			input := tgbotapi.NewInputMediaVideo(videoFile)
+			if i == 0 && caption != "" {
+				input.Caption = caption
 			}
-		} else {
-			rcv.log.Error("[msgInstagramTrigger] no media URL available for post %s", postInfo.Shortcode)
+			media = append(media, input)
+			continue
+		}
+
+		if item.URL == "" {
+			return nil, fmt.Errorf("carousel item %d has no url", i)
+		}
+		imageFile, err := downloadImage(item.URL)
+		if err != nil {
+			return nil, fmt.Errorf("download carousel image %d: %w", i, err)
+		}
+		input := tgbotapi.NewInputMediaPhoto(imageFile)
+		if i == 0 && caption != "" {
+			input.Caption = caption
+		}
+		media = append(media, input)
+	}
+	return media, nil
+}
+
+func (rcv *InstaBotService) sendInstagramAlbum(
+	chatID int64,
+	messageID int,
+	items []instloader.MediaItem,
+	caption string,
+	postInfo instloader.PostInfo,
+) {
+	for start := 0; start < len(items); start += telegramAlbumMax {
+		end := start + telegramAlbumMax
+		if end > len(items) {
+			end = len(items)
+		}
+		chunk := items[start:end]
+
+		// Telegram requires at least 2 items for a media group.
+		if len(chunk) == 1 {
+			chunkCaption := ""
+			if start == 0 {
+				chunkCaption = caption
+			}
+			rcv.sendSingleInstagramMedia(chatID, messageID, chunk[0], chunkCaption, postInfo)
+			continue
+		}
+
+		chunkCaption := ""
+		if start == 0 {
+			chunkCaption = caption
+		}
+		media, err := buildAlbumInputMedia(chunk, chunkCaption)
+		if err != nil {
+			rcv.log.WithError(err).Error("[msgInstagramTrigger] build album media")
+			rcv.sendInstagramFallback(chatID, postInfo, false)
+			return
+		}
+
+		album := tgbotapi.NewMediaGroup(chatID, media)
+		album.ReplyToMessageID = messageID
+		if _, err := rcv.bot.SendMediaGroup(album); err != nil {
+			rcv.log.WithError(err).Errorf("[msgInstagramTrigger] send media group (%d items)", len(chunk))
+			rcv.sendInstagramFallback(chatID, postInfo, false)
+			return
 		}
 	}
+}
+
+func (rcv *InstaBotService) msgInstagramTrigger(update tgbotapi.Update) {
+	chatID := update.Message.Chat.ID
+	messageID := update.Message.MessageID
+	url := exprFindURL.FindString(update.Message.Text)
+	fmt.Println("url", url)
+
+	if !strings.Contains(url, postSubstring) && !strings.Contains(url, reelSubstring) {
+		return
+	}
+
+	shortcode, err := extractShortcode(url)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] extract shortcode")
+		rcv.SendError(chatID, ErrInternalServerError)
+		return
+	}
+
+	postInfo, err := rcv.instloaderApi.GetPostInfo(shortcode)
+	if err != nil {
+		rcv.log.WithError(err).Error("[msgInstagramTrigger] get post info from microservice")
+		rcv.SendError(chatID, ErrInternalServerError)
+		return
+	}
+
+	caption := ""
+	items := usableMediaItems(postInfo.MediaItems())
+	if len(items) == 0 {
+		rcv.log.Errorf("[msgInstagramTrigger] no media URL available for post %s", postInfo.Shortcode)
+		return
+	}
+
+	if len(items) == 1 {
+		rcv.sendSingleInstagramMedia(chatID, messageID, items[0], caption, postInfo)
+		return
+	}
+
+	rcv.log.Infof("[msgInstagramTrigger] sending carousel with %d slides for %s", len(items), postInfo.Shortcode)
+	rcv.sendInstagramAlbum(chatID, messageID, items, caption, postInfo)
 }
 
 func downloadAndGetVideoFilesBytes(videos []*model.Video) ([]interface{}, error) {

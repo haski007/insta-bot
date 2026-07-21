@@ -18,16 +18,40 @@ func NewClient(baseURL *url.URL) *Client {
 	}
 }
 
+// MediaItem is one slide of a post (single image/video or carousel entry).
+type MediaItem struct {
+	IsVideo  bool   `json:"is_video"`
+	URL      string `json:"url"`
+	VideoURL string `json:"video_url"`
+}
+
 type PostInfo struct {
-	Shortcode string `json:"shortcode"`
-	IsVideo   bool   `json:"is_video"`
-	URL       string `json:"url"`
-	VideoURL  string `json:"video_url"`
-	Caption   string `json:"caption"`
-	Owner     string `json:"owner"`
-	Likes     int    `json:"likes"`
-	Comments  int    `json:"comments"`
-	Timestamp string `json:"timestamp"`
+	Shortcode string      `json:"shortcode"`
+	IsVideo   bool        `json:"is_video"`
+	URL       string      `json:"url"`
+	VideoURL  string      `json:"video_url"`
+	Caption   string      `json:"caption"`
+	Owner     string      `json:"owner"`
+	Likes     int         `json:"likes"`
+	Comments  int         `json:"comments"`
+	Timestamp string      `json:"timestamp"`
+	Media     []MediaItem `json:"media"`
+}
+
+// MediaItems returns carousel slides when present, otherwise a single item
+// built from the legacy top-level url/video_url fields.
+func (p PostInfo) MediaItems() []MediaItem {
+	if len(p.Media) > 0 {
+		return p.Media
+	}
+	if p.VideoURL == "" && p.URL == "" {
+		return nil
+	}
+	return []MediaItem{{
+		IsVideo:  p.IsVideo,
+		URL:      p.URL,
+		VideoURL: p.VideoURL,
+	}}
 }
 
 func (c *Client) GetPostInfo(shortcode string) (PostInfo, error) {

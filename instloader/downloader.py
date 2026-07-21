@@ -384,6 +384,148 @@ def get_instaloader():
         _L = create_instaloader()
     return _L
 
+# Public Instagram web app id; required by the private web API endpoints.
+IG_WEB_APP_ID = "936619743392459"
+
+# Shortcode alphabet used by Instagram (URL-safe base64).
+_SHORTCODE_ALPHABET = (
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+)
+
+
+def shortcode_to_mediaid(shortcode: str) -> int:
+    """Decode an Instagram shortcode (URL-safe base64) into its numeric media id."""
+    mediaid = 0
+    for char in shortcode:
+        mediaid = mediaid * 64 + _SHORTCODE_ALPHABET.index(char)
+    return mediaid
+
+
+def _has_media(info: dict) -> bool:
+    """True when the result dict carries a usable image or video URL."""
+    media = info.get("media") or []
+    if media:
+        return any(bool(m.get("video_url")) or bool(m.get("url")) for m in media)
+    return bool(info.get("video_url")) or bool(info.get("url"))
+
+
+def _media_entry_from_web_item(item: dict) -> dict | None:
+    """Build a single media entry from a web-API media item (image/video slide)."""
+    video_versions = item.get("video_versions") or []
+    video_url = video_versions[0]["url"] if video_versions else ""
+
+    image_url = ""
+    candidates = (item.get("image_versions2") or {}).get("candidates") or []
+    if candidates:
+        image_url = candidates[0]["url"]
+
+    if not video_url and not image_url:
+        return None
+
+    is_video = bool(video_url)
+    return {
+        "is_video": is_video,
+        "url": image_url or "",
+        "video_url": video_url if is_video else None,
+    }
+
+
+def _build_post_result(
+    shortcode: str,
+    media_items: list[dict],
+    *,
+    caption: str = "",
+    owner: str = "",
+    likes: int = 0,
+    comments: int = 0,
+    timestamp: str = "",
+) -> dict:
+    """Normalize post payload; top-level url fields mirror the first media item."""
+    first = media_items[0] if media_items else {
+        "is_video": False,
+        "url": "",
+        "video_url": None,
+    }
+    return {
+        "shortcode": shortcode,
+        "is_video": bool(first.get("is_video")),
+        "url": first.get("url") or "",
+        "video_url": first.get("video_url"),
+        "caption": caption or "",
+        "owner": owner or "",
+        "likes": likes or 0,
+        "comments": comments or 0,
+        "timestamp": timestamp or "",
+        "media": media_items,
+    }
+
+
+def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
+    """Fetch media info via Instagram's private web API using the logged-in session.
+
+    This is the most reliable path when a valid session cookie is present, since
+    GraphQL (`Post.from_shortcode`) frequently returns null payloads
+    ("'NoneType' object is not subscriptable") and public HTML no longer embeds
+    media URLs for reels.
+    """
+    mediaid = shortcode_to_mediaid(shortcode)
+    api_url = f"https://www.instagram.com/api/v1/media/{mediaid}/info/"
+
+    headers = dict(session.headers)
+    headers["X-IG-App-ID"] = IG_WEB_APP_ID
+    headers.setdefault("Accept", "*/*")
+    headers.setdefault("Referer", f"https://www.instagram.com/p/{shortcode}/")
+
+    resp = session.get(api_url, headers=headers, timeout=20)
+    logger.info(f"Web API GET {api_url} -> {resp.status_code}")
+    if resp.status_code != 200:
+        raise RuntimeError(f"web api http {resp.status_code}")
+
+    data = resp.json()
+    items = data.get("items") or []
+    if not items:
+        raise RuntimeError("web api returned no items")
+    item = items[0]
+
+    # media_type: 1=image, 2=video, 8=carousel (sidecar)
+    media_items: list[dict] = []
+    if item.get("media_type") == 8:
+        for slide in item.get("carousel_media") or []:
+            entry = _media_entry_from_web_item(slide)
+            if entry:
+                media_items.append(entry)
+        logger.info(f"Web API carousel for {shortcode}: {len(media_items)} slides")
+    else:
+        entry = _media_entry_from_web_item(item)
+        if entry:
+            media_items.append(entry)
+
+    if not media_items:
+        raise RuntimeError("web api returned no usable media urls")
+
+    # Caption/owner live on the parent item for carousels, not on each slide.
+    caption_node = item.get("caption") or {}
+    caption = caption_node.get("text", "") if isinstance(caption_node, dict) else ""
+    owner = (item.get("user") or {}).get("username", "")
+
+    taken_at = item.get("taken_at")
+    timestamp = ""
+    if isinstance(taken_at, (int, float)):
+        from datetime import datetime, timezone
+
+        timestamp = datetime.fromtimestamp(taken_at, tz=timezone.utc).isoformat()
+
+    return _build_post_result(
+        shortcode,
+        media_items,
+        caption=caption,
+        owner=owner,
+        likes=item.get("like_count", 0) or 0,
+        comments=item.get("comment_count", 0) or 0,
+        timestamp=timestamp,
+    )
+
+
 def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> dict:
     """Fetch media info by scraping public page HTML (OG tags and JSON-LD)."""
     headers = dict(session.headers)
@@ -534,53 +676,102 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
     except Exception as e:
         logger.warning(f"oEmbed fallback failed: {e}")
 
-    return {
-        "shortcode": shortcode,
-        "is_video": is_video,
-        "url": image_url or "",
-        "video_url": video_url if is_video else None,
-        "caption": caption or "",
-        "owner": author or "",
-        "likes": 0,
-        "comments": 0,
-        "timestamp": "",
-    }
+    media_items = []
+    if video_url or image_url:
+        media_items.append({
+            "is_video": is_video,
+            "url": image_url or "",
+            "video_url": video_url if is_video else None,
+        })
+
+    return _build_post_result(
+        shortcode,
+        media_items,
+        caption=caption or "",
+        owner=author or "",
+    )
+
+
+def _fetch_via_graphql(loader: Instaloader, shortcode: str) -> dict:
+    """Fetch post via Instaloader GraphQL, including all sidecar slides."""
+    post = Post.from_shortcode(loader.context, shortcode)
+    media_items: list[dict] = []
+
+    if post.typename == "GraphSidecar":
+        for node in post.get_sidecar_nodes():
+            media_items.append({
+                "is_video": node.is_video,
+                "url": node.display_url or "",
+                "video_url": node.video_url if node.is_video else None,
+            })
+        logger.info(f"GraphQL carousel for {shortcode}: {len(media_items)} slides")
+    else:
+        media_items.append({
+            "is_video": post.is_video,
+            "url": post.url or "",
+            "video_url": post.video_url if post.is_video else None,
+        })
+
+    return _build_post_result(
+        shortcode,
+        media_items,
+        caption=post.caption or "",
+        owner=post.owner_username or "",
+        likes=post.likes or 0,
+        comments=post.comments or 0,
+        timestamp=post.date_utc.isoformat() if post.date_utc else "",
+    )
 
 
 def get_post_info(shortcode: str):
-    try:
-        # Use the global instance
-        loader = get_instaloader()
-        logger.info(f"Instaloader logged_in={loader.context.is_logged_in}")
-        # Optional: avoid GraphQL entirely when forced
-        if os.getenv('INSTAGRAM_FORCE_HTML_FALLBACK', 'false').lower() in ('1', 'true', 'yes'):
-            logger.info("Force HTML fallback enabled; skipping GraphQL")
-            result = _fetch_public_page_metadata(shortcode, loader.context._session)
-            return result
+    loader = get_instaloader()
+    logger.info(f"Instaloader logged_in={loader.context.is_logged_in}")
+    session = loader.context._session
 
-        post = Post.from_shortcode(loader.context, shortcode)
-        return {
-            "shortcode": post.shortcode,
-            "is_video": post.is_video,
-            "url": post.url,
-            "video_url": post.video_url if post.is_video else None,
-            "caption": post.caption,
-            "owner": post.owner_username,
-            "likes": post.likes,
-            "comments": post.comments,
-            "timestamp": post.date_utc.isoformat(),
-        }
-    except Exception as e:
-        err_msg = str(e)
-        logger.error(f"Error getting post info for {shortcode}: {err_msg}")
-
-        # Fallback: try scraping public page meta tags (og:video / og:image) and JSON-LD
+    # Optional: avoid the API/GraphQL entirely when forced
+    if os.getenv('INSTAGRAM_FORCE_HTML_FALLBACK', 'false').lower() in ('1', 'true', 'yes'):
+        logger.info("Force HTML fallback enabled; skipping web API and GraphQL")
         try:
-            # Gentle backoff before fallback
-            time.sleep(random.uniform(0.8, 1.6))
-            loader = get_instaloader()
-            session = loader.context._session
-            return _fetch_public_page_metadata(shortcode, session)
-        except Exception as e2:
-            logger.error(f"Fallback scrape failed for {shortcode}: {e2}")
-            return {"error": err_msg}
+            result = _fetch_public_page_metadata(shortcode, session)
+            if _has_media(result):
+                return result
+            return {"error": f"no media URL available for {shortcode}"}
+        except Exception as e:
+            logger.error(f"HTML fallback failed for {shortcode}: {e}")
+            return {"error": str(e)}
+
+    last_err = ""
+
+    # 1) Private web API using the logged-in session — most reliable for reels.
+    try:
+        result = _fetch_via_web_api(shortcode, session)
+        if _has_media(result):
+            return result
+        logger.warning(f"Web API returned no media for {shortcode}")
+    except Exception as e:
+        last_err = str(e)
+        logger.error(f"Web API failed for {shortcode}: {last_err}")
+
+    # 2) GraphQL via Instaloader (supports full carousels via sidecar nodes).
+    try:
+        result = _fetch_via_graphql(loader, shortcode)
+        if _has_media(result):
+            return result
+        logger.warning(f"GraphQL returned no media for {shortcode}")
+    except Exception as e:
+        last_err = str(e)
+        logger.error(f"GraphQL failed for {shortcode}: {last_err}")
+
+    # 3) Public page HTML scraping (OG tags / JSON-LD / inline JSON).
+    try:
+        # Gentle backoff before the last-resort scrape
+        time.sleep(random.uniform(0.8, 1.6))
+        result = _fetch_public_page_metadata(shortcode, session)
+        if _has_media(result):
+            return result
+        logger.warning(f"HTML fallback returned no media for {shortcode}")
+    except Exception as e2:
+        last_err = str(e2)
+        logger.error(f"Fallback scrape failed for {shortcode}: {last_err}")
+
+    return {"error": last_err or f"no media URL available for {shortcode}"}

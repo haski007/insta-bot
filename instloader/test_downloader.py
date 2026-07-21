@@ -33,10 +33,10 @@ class TestDownloader(unittest.TestCase):
             # Even if there's an error, it should be a string
             self.assertIsInstance(result["error"], str)
         else:
-            # Check that all expected fields are present
+			# Check that all expected fields are present
             expected_fields = [
-                "shortcode", "is_video", "url", "video_url", 
-                "caption", "owner", "likes", "comments", "timestamp"
+                "shortcode", "is_video", "url", "video_url",
+                "caption", "owner", "likes", "comments", "timestamp", "media",
             ]
             
             for field in expected_fields:
@@ -49,6 +49,13 @@ class TestDownloader(unittest.TestCase):
             self.assertIsInstance(result["owner"], str)
             self.assertIsInstance(result["likes"], int)
             self.assertIsInstance(result["comments"], int)
+            self.assertIsInstance(result["media"], list)
+            self.assertGreaterEqual(len(result["media"]), 1)
+            for item in result["media"]:
+                self.assertIn("is_video", item)
+                self.assertIn("url", item)
+                self.assertTrue(item.get("url") or item.get("video_url"))
+
             
             # Video URL should be None if not a video, or a string if it is
             if result["is_video"]:
