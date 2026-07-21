@@ -60,7 +60,24 @@ func (c *Client) GetPostInfo(shortcode string) (PostInfo, error) {
 	reqURL.RawQuery = url.Values{
 		"shortcode": {shortcode},
 	}.Encode()
+	return c.getMediaInfo(reqURL)
+}
 
+// GetStoryInfo fetches a single Instagram story by numeric media id.
+func (c *Client) GetStoryInfo(mediaID, username string) (PostInfo, error) {
+	reqURL := *c.BaseURL
+	reqURL.Path = "/story"
+	values := url.Values{
+		"media_id": {mediaID},
+	}
+	if username != "" {
+		values.Set("username", username)
+	}
+	reqURL.RawQuery = values.Encode()
+	return c.getMediaInfo(reqURL)
+}
+
+func (c *Client) getMediaInfo(reqURL url.URL) (PostInfo, error) {
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return PostInfo{}, fmt.Errorf("create request: %w", err)

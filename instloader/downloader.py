@@ -460,33 +460,8 @@ def _build_post_result(
     }
 
 
-def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
-    """Fetch media info via Instagram's private web API using the logged-in session.
-
-    This is the most reliable path when a valid session cookie is present, since
-    GraphQL (`Post.from_shortcode`) frequently returns null payloads
-    ("'NoneType' object is not subscriptable") and public HTML no longer embeds
-    media URLs for reels.
-    """
-    mediaid = shortcode_to_mediaid(shortcode)
-    api_url = f"https://www.instagram.com/api/v1/media/{mediaid}/info/"
-
-    headers = dict(session.headers)
-    headers["X-IG-App-ID"] = IG_WEB_APP_ID
-    headers.setdefault("Accept", "*/*")
-    headers.setdefault("Referer", f"https://www.instagram.com/p/{shortcode}/")
-
-    resp = session.get(api_url, headers=headers, timeout=20)
-    logger.info(f"Web API GET {api_url} -> {resp.status_code}")
-    if resp.status_code != 200:
-        raise RuntimeError(f"web api http {resp.status_code}")
-
-    data = resp.json()
-    items = data.get("items") or []
-    if not items:
-        raise RuntimeError("web api returned no items")
-    item = items[0]
-
+def _parse_web_api_item(item: dict, *, label: str) -> dict:
+    """Turn a web-API media item into our normalized post/story payload."""
     # media_type: 1=image, 2=video, 8=carousel (sidecar)
     media_items: list[dict] = []
     if item.get("media_type") == 8:
@@ -494,7 +469,7 @@ def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
             entry = _media_entry_from_web_item(slide)
             if entry:
                 media_items.append(entry)
-        logger.info(f"Web API carousel for {shortcode}: {len(media_items)} slides")
+        logger.info(f"Web API carousel for {label}: {len(media_items)} slides")
     else:
         entry = _media_entry_from_web_item(item)
         if entry:
@@ -515,8 +490,9 @@ def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
 
         timestamp = datetime.fromtimestamp(taken_at, tz=timezone.utc).isoformat()
 
+    code = item.get("code") or label
     return _build_post_result(
-        shortcode,
+        str(code),
         media_items,
         caption=caption,
         owner=owner,
@@ -524,6 +500,130 @@ def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
         comments=item.get("comment_count", 0) or 0,
         timestamp=timestamp,
     )
+
+
+def _fetch_via_web_api_mediaid(
+    mediaid: int | str,
+    session: requests.Session,
+    *,
+    referer: str,
+    label: str,
+) -> dict:
+    """Fetch media (post or story) by numeric id via Instagram's private web API."""
+    api_url = f"https://www.instagram.com/api/v1/media/{mediaid}/info/"
+
+    headers = dict(session.headers)
+    headers["X-IG-App-ID"] = IG_WEB_APP_ID
+    headers.setdefault("Accept", "*/*")
+    headers.setdefault("Referer", referer)
+
+    resp = session.get(api_url, headers=headers, timeout=20)
+    logger.info(f"Web API GET {api_url} -> {resp.status_code}")
+    if resp.status_code != 200:
+        raise RuntimeError(f"web api http {resp.status_code}")
+
+    data = resp.json()
+    items = data.get("items") or []
+    if not items:
+        raise RuntimeError("web api returned no items")
+    return _parse_web_api_item(items[0], label=label)
+
+
+def _fetch_via_web_api(shortcode: str, session: requests.Session) -> dict:
+    """Fetch post/reel media info via Instagram's private web API."""
+    mediaid = shortcode_to_mediaid(shortcode)
+    return _fetch_via_web_api_mediaid(
+        mediaid,
+        session,
+        referer=f"https://www.instagram.com/p/{shortcode}/",
+        label=shortcode,
+    )
+
+
+def _fetch_story_via_instaloader(loader: Instaloader, media_id: int) -> dict:
+    """Fallback: Instaloader StoryItem by media id (requires login)."""
+    from instaloader import StoryItem
+
+    item = StoryItem.from_mediaid(loader.context, media_id)
+    media_items = [{
+        "is_video": item.is_video,
+        "url": item.url or "",
+        "video_url": item.video_url if item.is_video else None,
+    }]
+    owner = ""
+    try:
+        owner = item.owner_username or ""
+    except Exception:
+        pass
+    timestamp = ""
+    try:
+        if item.date_utc:
+            timestamp = item.date_utc.isoformat()
+    except Exception:
+        pass
+    return _build_post_result(
+        str(media_id),
+        media_items,
+        owner=owner,
+        timestamp=timestamp,
+    )
+
+
+def get_story_info(media_id: str, username: str = "") -> dict:
+    """Fetch a single Instagram story by numeric media id.
+
+    Story URLs look like: https://www.instagram.com/stories/{username}/{media_id}/
+    Requires a logged-in session that can view the story (public, or following
+    private accounts). Stories expire after ~24h.
+    """
+    media_id = (media_id or "").strip()
+    if not media_id.isdigit():
+        return {"error": f"invalid story media_id: {media_id!r}"}
+
+    mediaid_int = int(media_id)
+    username = (username or "").strip().lstrip("@")
+    loader = get_instaloader()
+    logger.info(
+        f"Fetching story media_id={media_id} username={username!r} "
+        f"logged_in={loader.context.is_logged_in}"
+    )
+    session = loader.context._session
+
+    if username:
+        referer = f"https://www.instagram.com/stories/{username}/{media_id}/"
+    else:
+        referer = "https://www.instagram.com/"
+
+    last_err = ""
+
+    try:
+        result = _fetch_via_web_api_mediaid(
+            mediaid_int,
+            session,
+            referer=referer,
+            label=media_id,
+        )
+        if username and not result.get("owner"):
+            result["owner"] = username
+        if _has_media(result):
+            return result
+        logger.warning(f"Web API returned no media for story {media_id}")
+    except Exception as e:
+        last_err = str(e)
+        logger.error(f"Web API failed for story {media_id}: {last_err}")
+
+    try:
+        result = _fetch_story_via_instaloader(loader, mediaid_int)
+        if username and not result.get("owner"):
+            result["owner"] = username
+        if _has_media(result):
+            return result
+        logger.warning(f"Instaloader StoryItem returned no media for {media_id}")
+    except Exception as e:
+        last_err = str(e)
+        logger.error(f"Instaloader StoryItem failed for {media_id}: {last_err}")
+
+    return {"error": last_err or f"no media URL available for story {media_id}"}
 
 
 def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> dict:

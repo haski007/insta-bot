@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 from .downloader import (
     get_post_info,
+    get_story_info,
     create_instaloader,
     has_valid_session,
     get_sessionid,
@@ -19,6 +20,14 @@ def _env_bool(name: str, default: bool = False) -> bool:
     if not v:
         return default
     return v in ("1", "true", "yes", "y", "on")
+
+
+def _raise_from_result(result: dict):
+    msg = str(result.get("error"))
+    # Map known rate-limit/unauthorized messages to 429; otherwise 502
+    if "Please wait a few minutes" in msg or "429" in msg or "401" in msg or "403" in msg:
+        raise HTTPException(status_code=429, detail=msg)
+    raise HTTPException(status_code=502, detail=msg)
 
 
 app = FastAPI()
@@ -76,9 +85,16 @@ def health_check():
 def media(shortcode: str = Query(...)):
     result = get_post_info(shortcode)
     if isinstance(result, dict) and result.get("error"):
-        msg = str(result.get("error"))
-        # Map known rate-limit/unauthorized messages to 429; otherwise 502
-        if "Please wait a few minutes" in msg or "429" in msg or "401" in msg or "403" in msg:
-            raise HTTPException(status_code=429, detail=msg)
-        raise HTTPException(status_code=502, detail=msg)
+        _raise_from_result(result)
+    return result
+
+
+@app.get("/story")
+def story(
+    media_id: str = Query(..., description="Numeric Instagram story media id"),
+    username: str = Query("", description="Optional story owner username from the URL"),
+):
+    result = get_story_info(media_id, username=username)
+    if isinstance(result, dict) and result.get("error"):
+        _raise_from_result(result)
     return result

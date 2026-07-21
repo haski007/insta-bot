@@ -176,21 +176,26 @@ func (rcv *InstaBotService) StartPool() error {
 		// Parse messages
 		if update.Message != nil && !update.Message.IsCommand() {
 			switch {
-			case strings.Contains(update.Message.Text, publisher.InstagramBaseUrl):
+			case strings.Contains(update.Message.Text, "instagram.com"):
 				loaderEnabled, err := rcv.storage.IsChatLoaderEnabled(update.Message.Chat.ID)
 				if err != nil {
 					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
 				}
-				if loaderEnabled {
+				if !loaderEnabled {
+					rcv.log.Infof("Ignore instagram url: %s due to loader disabled", update.Message.Text)
+					break
+				}
+				igURL := exprFindURL.FindString(update.Message.Text)
+				switch {
+				case strings.Contains(igURL, "/stories/"):
+					go rcv.msgStoriesTrigger(update)
+				case strings.Contains(igURL, "/p/"), strings.Contains(igURL, "/reel/"):
 					go rcv.msgInstagramTrigger(update)
-				} else {
-					rcv.log.Infof("Ignore instagram post: %s due to loader disabled", update.Message.Text)
+				default:
+					rcv.log.Infof("Ignore unsupported instagram url: %s", igURL)
 				}
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
 				go rcv.msgTwitterTrigger(update)
-			case strings.Contains(update.Message.Text, publisher.InstagramStoriesBaseUrl):
-				//go rcv.msgStoriesTrigger(update)
-				rcv.log.Infof("Ignore stories: %s due to broken downloader", update.Message.Text)
 
 			case strings.Contains(update.Message.Text, publisher.TikTokBaseUrl) ||
 				strings.Contains(update.Message.Text, publisher.TikTokShareBaseUrl):
