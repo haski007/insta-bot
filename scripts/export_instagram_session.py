@@ -53,7 +53,7 @@ def save_if_ok(loader: Instaloader, username: str, out: str) -> bool:
         print(f"test_login() raised {e!r} (sessionid length={sid_len}) — saving anyway")
     loader.save_session_to_file(out)
     print(f"OK: wrote {out!r}")
-    print(f"  scp {out} user@vps:~/projects/insta-bot/secrets/session.json")
+    print(f"  scp {out} user@vps:~/projects/insta-bot/secrets/{out}")
     return True
 
 

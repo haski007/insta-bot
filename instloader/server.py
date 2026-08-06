@@ -3,8 +3,8 @@ from .downloader import (
     get_post_info,
     get_story_info,
     create_instaloader,
-    has_valid_session,
-    get_sessionid,
+    get_account_pool,
+    describe_accounts,
     session_validation_error,
 )
 import logging
@@ -39,24 +39,38 @@ async def startup_event():
     try:
         logger.info("=== INSTALOADER STARTUP ===")
         logger.info("Initializing Instaloader...")
-        loader = create_instaloader()
-        session_file = os.getenv("INSTAGRAM_SESSION_FILE")
-        username = os.getenv("INSTAGRAM_USERNAME")
+        # Also builds/logs any additional accounts (INSTAGRAM_USERNAME_2, ...).
+        get_account_pool()
+        accounts = describe_accounts()
+        valid_accounts = [a for a in accounts if a["valid"]]
 
-        if has_valid_session(loader):
+        for a in accounts:
+            status = "✅ valid" if a["valid"] else "❌ invalid"
             logger.info(
-                f"✅ Valid Instagram session (sessionid length={len(get_sessionid(loader))})"
+                f"  Account {a['label']!r}: {status} "
+                f"(logged_in={a['logged_in']}, sessionid_len={a['sessionid_len']})"
+            )
+
+        if valid_accounts:
+            logger.info(
+                f"✅ {len(valid_accounts)}/{len(accounts)} Instagram account(s) have a valid session"
             )
             logger.info("=== INSTALOADER STARTUP COMPLETE ===")
             return
 
+        # No account has a usable session — fall back to detailed diagnostics
+        # for the primary account (account 1), which is the common case.
+        loader = create_instaloader()
+        session_file = os.getenv("INSTAGRAM_SESSION_FILE")
+        username = os.getenv("INSTAGRAM_USERNAME")
         reason = session_validation_error(
             loader, username=username, session_file=session_file
         )
-        logger.error(f"❌ Invalid Instagram session — {reason}")
+        logger.error(f"❌ No Instagram account has a valid session — {reason}")
         logger.error(
             "Service will not start. Password login on VPS is often blocked by Instagram. "
             "Import session from your PC: secrets/session.json or INSTAGRAM_SESSIONID in .env. "
+            "For multiple accounts, use INSTAGRAM_USERNAME_2/_3/... suffixes. "
             "See secrets/README.md and scripts/export_instagram_session.py"
         )
         # Emergency dev only: INSTLOADER_ALLOW_ANONYMOUS=true

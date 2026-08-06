@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import threading
 from urllib.parse import unquote
 import re
 import time
@@ -14,20 +15,60 @@ from instaloader.exceptions import TwoFactorAuthRequiredException
 # Configure logging to emit via Uvicorn's logger so INFO-level lines are visible in container logs
 logger = logging.getLogger("uvicorn.error")
 
-# Global Instaloader instance
+# Global Instaloader instance (the "primary"/first account — kept for backwards
+# compatibility with callers that only know about a single account, e.g. the
+# startup health check in server.py).
 _L = None
 
 MIN_SESSIONID_LEN = 10
 HOST_SESSION_IMPORT = "/secrets/session.json"
 MIN_SESSION_FILE_BYTES = 32
 
+# Multi-account support: account 1 is configured via the plain env vars
+# (INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD, ...) for backwards compatibility.
+# Additional accounts are configured with a numeric suffix, e.g.
+# INSTAGRAM_USERNAME_2 / INSTAGRAM_PASSWORD_2 / INSTAGRAM_SESSIONID_2 /
+# INSTAGRAM_PROXY_2 / INSTAGRAM_SESSION_FILE_2, INSTAGRAM_USERNAME_3, ...
+# Requests rotate across all accounts with a valid session, and automatically
+# fail over to the next account when one is rate-limited/blocked.
+MAX_ACCOUNTS = 10
 
-def resolve_session_paths() -> tuple[str | None, str]:
+
+def _account_env(name: str, suffix: str) -> str | None:
+    """Read an env var for a given account suffix ("" for account 1, "_2", "_3", ...)."""
+    return os.getenv(f"{name}{suffix}")
+
+
+def _account_label(suffix: str) -> str:
+    username = _account_env("INSTAGRAM_USERNAME", suffix)
+    return username or f"account{suffix or '#1'}"
+
+
+def _host_session_import_path(suffix: str) -> str:
+    return HOST_SESSION_IMPORT if not suffix else f"/secrets/session{suffix}.json"
+
+
+def _default_session_save_path(suffix: str) -> str:
+    return "/data/session.json" if not suffix else f"/data/session{suffix}.json"
+
+
+def discover_account_suffixes() -> list[str]:
+    """Return account suffixes ("" for account 1, then "_2", "_3", ...) that have config."""
+    suffixes = [""]
+    for i in range(2, MAX_ACCOUNTS + 1):
+        suffix = f"_{i}"
+        if _account_env("INSTAGRAM_USERNAME", suffix) or _account_env("INSTAGRAM_SESSIONID", suffix):
+            suffixes.append(suffix)
+    return suffixes
+
+
+def resolve_session_paths(suffix: str = "") -> tuple[str | None, str]:
     """Return (path_to_load or None, path_to_save). Missing session triggers login + save."""
-    save_path = os.getenv("INSTAGRAM_SESSION_FILE") or "/data/session.json"
-    if is_usable_session_file(HOST_SESSION_IMPORT):
-        logger.info(f"Using host session import from {HOST_SESSION_IMPORT}")
-        return HOST_SESSION_IMPORT, save_path
+    save_path = _account_env("INSTAGRAM_SESSION_FILE", suffix) or _default_session_save_path(suffix)
+    host_import = _host_session_import_path(suffix)
+    if is_usable_session_file(host_import):
+        logger.info(f"Using host session import from {host_import}")
+        return host_import, save_path
     if is_usable_session_file(save_path):
         return save_path, save_path
     return None, save_path
@@ -161,9 +202,9 @@ def save_session_file(loader: Instaloader, session_save_path: str) -> None:
     logger.info(f"Saved session to {session_save_path!r}")
 
 
-def build_session_data_from_sessionid(sessionid: str) -> dict:
+def build_session_data_from_sessionid(sessionid: str, suffix: str = "") -> dict:
     """Instaloader 4.x expects a cookie dict for load_session(), not a plain string."""
-    ds_user_id = (os.getenv("INSTAGRAM_DS_USER_ID") or "").strip()
+    ds_user_id = (_account_env("INSTAGRAM_DS_USER_ID", suffix) or "").strip()
     if not ds_user_id:
         head = sessionid.split(":", 1)[0]
         if head.isdigit():
@@ -171,13 +212,13 @@ def build_session_data_from_sessionid(sessionid: str) -> dict:
     return {
         "sessionid": sessionid,
         "ds_user_id": ds_user_id,
-        "csrftoken": (os.getenv("INSTAGRAM_CSRFTOKEN") or "imported").strip(),
-        "mid": (os.getenv("INSTAGRAM_MID") or "").strip(),
+        "csrftoken": (_account_env("INSTAGRAM_CSRFTOKEN", suffix) or "imported").strip(),
+        "mid": (_account_env("INSTAGRAM_MID", suffix) or "").strip(),
         "ig_pr": "1",
         "ig_vw": "1920",
         "ig_cb": "1",
         "s_network": "",
-        "ig_did": (os.getenv("INSTAGRAM_IG_DID") or "").strip(),
+        "ig_did": (_account_env("INSTAGRAM_IG_DID", suffix) or "").strip(),
     }
 
 
@@ -185,15 +226,16 @@ def try_load_sessionid_from_env(
     loader: Instaloader,
     username: str,
     session_save_path: str,
+    suffix: str = "",
 ) -> bool:
     """Load sessionid from INSTAGRAM_SESSIONID env (browser export) and persist to disk."""
-    raw = (os.getenv("INSTAGRAM_SESSIONID") or "").strip().strip('"').strip("'")
+    raw = (_account_env("INSTAGRAM_SESSIONID", suffix) or "").strip().strip('"').strip("'")
     if not raw:
         return False
     sessionid = unquote(raw)
     try:
         logger.info("Loading session from INSTAGRAM_SESSIONID env var...")
-        loader.load_session(username, build_session_data_from_sessionid(sessionid))
+        loader.load_session(username, build_session_data_from_sessionid(sessionid, suffix))
         if not has_valid_session(loader):
             logger.error("INSTAGRAM_SESSIONID was set but session is still invalid after load_session")
             return False
@@ -277,52 +319,63 @@ def session_validation_error(
     return "Unknown session validation failure."
 
 
-def create_instaloader():
-    """Create and optionally login to Instaloader.
+def _create_instaloader_account(suffix: str = "") -> Instaloader:
+    """Create and optionally login to Instaloader for one account.
+
+    `suffix` selects which set of `INSTAGRAM_*` env vars to use: "" for the
+    primary account (plain names, e.g. INSTAGRAM_USERNAME), or "_2", "_3", ...
+    for additional accounts (e.g. INSTAGRAM_USERNAME_2).
 
     Enhancements:
-    - Supports HTTP(S) proxy via `INSTAGRAM_PROXY` or standard env vars
-    - Allows custom User-Agent via `INSTAGRAM_USER_AGENT`
-    - Persists session to file `INSTAGRAM_SESSION_FILE` (if provided)
+    - Supports HTTP(S) proxy via `INSTAGRAM_PROXY[_N]` or standard env vars
+    - Allows custom User-Agent via `INSTAGRAM_USER_AGENT[_N]`
+    - Persists session to file `INSTAGRAM_SESSION_FILE[_N]` (if provided)
     - Adds connection retries for transient 403/5xx
     """
-    global _L
-    
-    if _L is not None:
-        logger.info("Instaloader already initialized, returning existing instance")
-        return _L
-    
-    logger.info("Creating new Instaloader instance...")
-    _L = Instaloader()
-    
-    # Configure proxy if provided
-    proxy = os.getenv('INSTAGRAM_PROXY')
+    label = _account_label(suffix)
+    logger.info(f"Creating new Instaloader instance for {label!r}...")
+    # The iPhone-private-API lookup Instaloader uses for "high-quality" video/image
+    # versions requires a genuine mobile-app session; sessionid-only imports (the
+    # normal case here) always get 403 "login_required" from i.instagram.com after
+    # 3 slow retries. Disabling it avoids ~3-8s of wasted latency per video request
+    # while falling back to the perfectly usable GraphQL/web-API video URL.
+    iphone_support = (_account_env("INSTAGRAM_IPHONE_SUPPORT", suffix) or "").strip().lower() in (
+        "1", "true", "yes", "y", "on",
+    )
+    if not iphone_support:
+        logger.info(f"[{label}] iPhone high-quality media lookup disabled (INSTAGRAM_IPHONE_SUPPORT=false)")
+    loader = Instaloader(iphone_support=iphone_support)
+
+    # Configure proxy if provided (falls back to the shared INSTAGRAM_PROXY for
+    # extra accounts if no dedicated proxy was set; ideally each account should
+    # use its own proxy/IP to avoid correlating them).
+    proxy = _account_env("INSTAGRAM_PROXY", suffix) or (os.getenv("INSTAGRAM_PROXY") if suffix else None)
     try:
         if proxy:
-            logger.info(f"Configuring proxy (INSTAGRAM_PROXY)")
-            _L.context._session.proxies = {
+            logger.info(f"[{label}] Configuring proxy")
+            loader.context._session.proxies = {
                 'http': proxy,
                 'https': proxy
             }
         else:
             # Allow standard HTTP(S)_PROXY env variables to be used
-            _L.context._session.trust_env = True
-        logger.info("Proxy configuration applied")
+            loader.context._session.trust_env = True
+        logger.info(f"[{label}] Proxy configuration applied")
     except Exception as e:
-        logger.error(f"Failed to configure proxy: {e}")
+        logger.error(f"[{label}] Failed to configure proxy: {e}")
 
     # Configure User-Agent if provided (helps avoid bot detection on DC IPs)
-    user_agent = os.getenv('INSTAGRAM_USER_AGENT')
+    user_agent = _account_env("INSTAGRAM_USER_AGENT", suffix) or (os.getenv("INSTAGRAM_USER_AGENT") if suffix else None)
     if user_agent:
         try:
-            _L.context._session.headers['User-Agent'] = user_agent
+            loader.context._session.headers['User-Agent'] = user_agent
             # Common real-browser headers improve legitimacy a bit
-            _L.context._session.headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
-            _L.context._session.headers.setdefault('Accept-Language', 'en-US,en;q=0.9')
-            _L.context._session.headers.setdefault('Upgrade-Insecure-Requests', '1')
-            logger.info("Custom User-Agent header applied")
+            loader.context._session.headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
+            loader.context._session.headers.setdefault('Accept-Language', 'en-US,en;q=0.9')
+            loader.context._session.headers.setdefault('Upgrade-Insecure-Requests', '1')
+            logger.info(f"[{label}] Custom User-Agent header applied")
         except Exception as e:
-            logger.error(f"Failed to set custom User-Agent: {e}")
+            logger.error(f"[{label}] Failed to set custom User-Agent: {e}")
 
     # Add basic retries for transient HTTP errors
     try:
@@ -333,56 +386,157 @@ def create_instaloader():
             allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
         adapter = HTTPAdapter(max_retries=retry)
-        _L.context._session.mount('http://', adapter)
-        _L.context._session.mount('https://', adapter)
-        logger.info("HTTP retries configured")
+        loader.context._session.mount('http://', adapter)
+        loader.context._session.mount('https://', adapter)
+        logger.info(f"[{label}] HTTP retries configured")
     except Exception as e:
-        logger.error(f"Failed to configure HTTP retries: {e}")
-    
+        logger.error(f"[{label}] Failed to configure HTTP retries: {e}")
+
     # Get credentials and session persistence settings from environment variables
-    username = os.getenv('INSTAGRAM_USERNAME')
-    password = os.getenv('INSTAGRAM_PASSWORD')
-    session_load_path, session_save_path = resolve_session_paths()
+    username = _account_env("INSTAGRAM_USERNAME", suffix)
+    password = _account_env("INSTAGRAM_PASSWORD", suffix)
+    session_load_path, session_save_path = resolve_session_paths(suffix)
     session_dir = os.path.dirname(session_save_path)
     if session_dir:
         os.makedirs(session_dir, exist_ok=True)
 
     if username and session_load_path:
-        if not try_load_session(_L, username, session_load_path):
-            logger.info("Existing session file not loaded or invalid")
+        if not try_load_session(loader, username, session_load_path):
+            logger.info(f"[{label}] Existing session file not loaded or invalid")
     elif username:
         logger.info(
-            f"No session file yet at {session_save_path!r} "
-            f"(optional import: {HOST_SESSION_IMPORT})"
+            f"[{label}] No session file yet at {session_save_path!r} "
+            f"(optional import: {_host_session_import_path(suffix)})"
         )
 
-    if has_valid_session(_L):
-        logger.info("Valid sessionid present; skipping login")
-    elif username and try_load_sessionid_from_env(_L, username, session_save_path):
-        logger.info("Session loaded from INSTAGRAM_SESSIONID")
+    if has_valid_session(loader):
+        logger.info(f"[{label}] Valid sessionid present; skipping login")
+    elif username and try_load_sessionid_from_env(loader, username, session_save_path, suffix):
+        logger.info(f"[{label}] Session loaded from INSTAGRAM_SESSIONID{suffix}")
     elif username and password:
-        login_and_save_session(_L, username, password, session_save_path)
+        login_and_save_session(loader, username, password, session_save_path)
     else:
         logger.warning(
-            "No valid session. Set INSTAGRAM_PASSWORD (often blocked on VPS), "
-            "INSTAGRAM_SESSIONID, or secrets/session.json from your local machine."
+            f"[{label}] No valid session. Set INSTAGRAM_PASSWORD{suffix} (often blocked on VPS), "
+            f"INSTAGRAM_SESSIONID{suffix}, or {_host_session_import_path(suffix)} from your local machine."
         )
 
-    sid_len = len(get_sessionid(_L))
-    valid = has_valid_session(_L)
+    sid_len = len(get_sessionid(loader))
+    valid = has_valid_session(loader)
     logger.info(
-        f"Instaloader ready; logged_in={_L.context.is_logged_in}, "
+        f"[{label}] Instaloader ready; logged_in={loader.context.is_logged_in}, "
         f"valid_session={valid}, sessionid_len={sid_len}"
     )
+    return loader
+
+
+def create_instaloader():
+    """Create (or return the cached) primary Instaloader instance (account 1).
+
+    Kept for backwards compatibility with callers that only know about a
+    single account (e.g. the startup health check). For multi-account
+    request handling, use `get_account_pool()` instead.
+    """
+    global _L
+
+    if _L is not None:
+        logger.info("Instaloader already initialized, returning existing instance")
+        return _L
+
+    _L = _create_instaloader_account("")
     return _L
 
+
 def get_instaloader():
-    """Get the global Instaloader instance, creating it if necessary"""
+    """Get the global (primary) Instaloader instance, creating it if necessary"""
     global _L
     if _L is None:
-        logger.info("Creating new Instaloader instance")
         _L = create_instaloader()
     return _L
+
+
+# Cache of additional accounts (suffix -> Instaloader), lazily built.
+_EXTRA_ACCOUNTS: dict[str, Instaloader] = {}
+# Every configured account that was successfully built, valid or not — used
+# for startup diagnostics (see describe_accounts()).
+_ALL_ACCOUNTS: list[tuple[str, Instaloader]] = []
+# Cache of the final rotation pool, built once from all configured accounts.
+_ACCOUNT_POOL: list[Instaloader] | None = None
+_rotation_lock = threading.Lock()
+_rotation_counter = 0
+
+
+def get_account_pool() -> list[Instaloader]:
+    """Return all configured Instagram accounts usable for requests.
+
+    Builds the primary account plus any INSTAGRAM_USERNAME_2/_3/... accounts on
+    first use. Prefers accounts with a valid session; if none are valid (e.g.
+    anonymous/dev mode), falls back to returning all configured accounts so
+    unauthenticated fetching still works as before.
+    """
+    global _ACCOUNT_POOL
+    if _ACCOUNT_POOL is not None:
+        return _ACCOUNT_POOL
+
+    if not _ALL_ACCOUNTS:
+        _ALL_ACCOUNTS.append(("", get_instaloader()))
+        for suffix in discover_account_suffixes()[1:]:
+            loader = _EXTRA_ACCOUNTS.get(suffix)
+            if loader is None:
+                try:
+                    loader = _create_instaloader_account(suffix)
+                    _EXTRA_ACCOUNTS[suffix] = loader
+                except Exception as e:
+                    logger.error(f"Failed to initialize Instagram account {_account_label(suffix)!r}: {e}")
+                    continue
+            _ALL_ACCOUNTS.append((suffix, loader))
+
+    accounts = [loader for _, loader in _ALL_ACCOUNTS]
+    valid = [a for a in accounts if has_valid_session(a)]
+    if valid:
+        if len(valid) < len(accounts):
+            logger.warning(
+                f"{len(accounts) - len(valid)} of {len(accounts)} configured Instagram "
+                "account(s) have no valid session and will be excluded from rotation"
+            )
+        _ACCOUNT_POOL = valid
+    else:
+        _ACCOUNT_POOL = accounts
+
+    if len(_ACCOUNT_POOL) > 1:
+        logger.info(f"Instagram account pool ready: {len(_ACCOUNT_POOL)} accounts in rotation")
+    return _ACCOUNT_POOL
+
+
+def describe_accounts() -> list[dict]:
+    """Diagnostic summary of every configured account (valid or not).
+
+    Builds the account pool if not already built. Intended for startup health
+    checks / logging, not for the hot request path.
+    """
+    get_account_pool()
+    return [
+        {
+            "label": _account_label(suffix),
+            "valid": has_valid_session(loader),
+            "sessionid_len": len(get_sessionid(loader)),
+            "logged_in": bool(loader.context.is_logged_in),
+        }
+        for suffix, loader in _ALL_ACCOUNTS
+    ]
+
+
+def _rotated_accounts() -> list[Instaloader]:
+    """Return the account pool reordered so consecutive calls start with a
+    different account (round-robin), with the rest kept as failover order."""
+    pool = get_account_pool()
+    if len(pool) <= 1:
+        return pool
+    global _rotation_counter
+    with _rotation_lock:
+        start = _rotation_counter % len(pool)
+        _rotation_counter += 1
+    return pool[start:] + pool[:start]
 
 # Public Instagram web app id; required by the private web API endpoints.
 IG_WEB_APP_ID = "936619743392459"
@@ -517,8 +671,15 @@ def _fetch_via_web_api_mediaid(
     headers.setdefault("Accept", "*/*")
     headers.setdefault("Referer", referer)
 
-    resp = session.get(api_url, headers=headers, timeout=20)
+    # Don't follow redirects: an unauthenticated/rejected session on this endpoint
+    # causes Instagram to bounce between login/challenge redirects until requests'
+    # 30-redirect cap trips (~5s wasted per call). A bare redirect here reliably
+    # means the session isn't accepted for this endpoint, so fail fast instead.
+    resp = session.get(api_url, headers=headers, timeout=20, allow_redirects=False)
     logger.info(f"Web API GET {api_url} -> {resp.status_code}")
+    if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+        location = resp.headers.get("Location", "")
+        raise RuntimeError(f"web api redirected (likely login_required) -> {location!r}")
     if resp.status_code != 200:
         raise RuntimeError(f"web api http {resp.status_code}")
 
@@ -569,20 +730,12 @@ def _fetch_story_via_instaloader(loader: Instaloader, media_id: int) -> dict:
     )
 
 
-def get_story_info(media_id: str, username: str = "") -> dict:
-    """Fetch a single Instagram story by numeric media id.
+def _rate_limited_error(msg: str) -> bool:
+    """True when an error looks like a per-account block (worth trying another account)."""
+    return any(tok in msg for tok in ("429", "401", "403", "login_required", "wait a few minutes"))
 
-    Story URLs look like: https://www.instagram.com/stories/{username}/{media_id}/
-    Requires a logged-in session that can view the story (public, or following
-    private accounts). Stories expire after ~24h.
-    """
-    media_id = (media_id or "").strip()
-    if not media_id.isdigit():
-        return {"error": f"invalid story media_id: {media_id!r}"}
 
-    mediaid_int = int(media_id)
-    username = (username or "").strip().lstrip("@")
-    loader = get_instaloader()
+def _get_story_info_with_loader(loader: Instaloader, media_id: str, mediaid_int: int, username: str) -> dict:
     logger.info(
         f"Fetching story media_id={media_id} username={username!r} "
         f"logged_in={loader.context.is_logged_in}"
@@ -594,7 +747,7 @@ def get_story_info(media_id: str, username: str = "") -> dict:
     else:
         referer = "https://www.instagram.com/"
 
-    last_err = ""
+    attempts: list[str] = []
 
     try:
         result = _fetch_via_web_api_mediaid(
@@ -609,8 +762,8 @@ def get_story_info(media_id: str, username: str = "") -> dict:
             return result
         logger.warning(f"Web API returned no media for story {media_id}")
     except Exception as e:
-        last_err = str(e)
-        logger.error(f"Web API failed for story {media_id}: {last_err}")
+        attempts.append(str(e))
+        logger.error(f"Web API failed for story {media_id}: {attempts[-1]}")
 
     try:
         result = _fetch_story_via_instaloader(loader, mediaid_int)
@@ -620,8 +773,45 @@ def get_story_info(media_id: str, username: str = "") -> dict:
             return result
         logger.warning(f"Instaloader StoryItem returned no media for {media_id}")
     except Exception as e:
-        last_err = str(e)
-        logger.error(f"Instaloader StoryItem failed for {media_id}: {last_err}")
+        attempts.append(str(e))
+        logger.error(f"Instaloader StoryItem failed for {media_id}: {attempts[-1]}")
+
+    return {
+        "error": (attempts[-1] if attempts else f"no media URL available for story {media_id}"),
+        "_attempts": attempts,
+    }
+
+
+def get_story_info(media_id: str, username: str = "") -> dict:
+    """Fetch a single Instagram story by numeric media id.
+
+    Story URLs look like: https://www.instagram.com/stories/{username}/{media_id}/
+    Requires a logged-in session that can view the story (public, or following
+    private accounts). Stories expire after ~24h.
+
+    When multiple Instagram accounts are configured (INSTAGRAM_USERNAME_2, ...),
+    rotates across them and automatically retries with another account when one
+    looks rate-limited or logged out.
+    """
+    media_id = (media_id or "").strip()
+    if not media_id.isdigit():
+        return {"error": f"invalid story media_id: {media_id!r}"}
+
+    mediaid_int = int(media_id)
+    username = (username or "").strip().lstrip("@")
+
+    pool = _rotated_accounts()
+    last_err = ""
+    for loader in pool:
+        result = _get_story_info_with_loader(loader, media_id, mediaid_int, username)
+        if not result.get("error"):
+            return result
+        last_err = result["error"]
+        attempts = result.pop("_attempts", None) or [last_err]
+        if len(pool) > 1 and any(_rate_limited_error(a) for a in attempts):
+            logger.warning(f"Story {media_id} looks rate-limited on this account; trying next account")
+            continue
+        break
 
     return {"error": last_err or f"no media URL available for story {media_id}"}
 
@@ -823,10 +1013,10 @@ def _fetch_via_graphql(loader: Instaloader, shortcode: str) -> dict:
     )
 
 
-def get_post_info(shortcode: str):
-    loader = get_instaloader()
+def _get_post_info_with_loader(loader: Instaloader, shortcode: str) -> dict:
     logger.info(f"Instaloader logged_in={loader.context.is_logged_in}")
     session = loader.context._session
+    attempts: list[str] = []
 
     # Optional: avoid the API/GraphQL entirely when forced
     if os.getenv('INSTAGRAM_FORCE_HTML_FALLBACK', 'false').lower() in ('1', 'true', 'yes'):
@@ -835,12 +1025,10 @@ def get_post_info(shortcode: str):
             result = _fetch_public_page_metadata(shortcode, session)
             if _has_media(result):
                 return result
-            return {"error": f"no media URL available for {shortcode}"}
+            return {"error": f"no media URL available for {shortcode}", "_attempts": attempts}
         except Exception as e:
             logger.error(f"HTML fallback failed for {shortcode}: {e}")
-            return {"error": str(e)}
-
-    last_err = ""
+            return {"error": str(e), "_attempts": [str(e)]}
 
     # 1) Private web API using the logged-in session — most reliable for reels.
     try:
@@ -849,8 +1037,8 @@ def get_post_info(shortcode: str):
             return result
         logger.warning(f"Web API returned no media for {shortcode}")
     except Exception as e:
-        last_err = str(e)
-        logger.error(f"Web API failed for {shortcode}: {last_err}")
+        attempts.append(str(e))
+        logger.error(f"Web API failed for {shortcode}: {attempts[-1]}")
 
     # 2) GraphQL via Instaloader (supports full carousels via sidecar nodes).
     try:
@@ -859,8 +1047,8 @@ def get_post_info(shortcode: str):
             return result
         logger.warning(f"GraphQL returned no media for {shortcode}")
     except Exception as e:
-        last_err = str(e)
-        logger.error(f"GraphQL failed for {shortcode}: {last_err}")
+        attempts.append(str(e))
+        logger.error(f"GraphQL failed for {shortcode}: {attempts[-1]}")
 
     # 3) Public page HTML scraping (OG tags / JSON-LD / inline JSON).
     try:
@@ -871,7 +1059,30 @@ def get_post_info(shortcode: str):
             return result
         logger.warning(f"HTML fallback returned no media for {shortcode}")
     except Exception as e2:
-        last_err = str(e2)
-        logger.error(f"Fallback scrape failed for {shortcode}: {last_err}")
+        attempts.append(str(e2))
+        logger.error(f"Fallback scrape failed for {shortcode}: {attempts[-1]}")
+
+    return {
+        "error": (attempts[-1] if attempts else f"no media URL available for {shortcode}"),
+        "_attempts": attempts,
+    }
+
+
+def get_post_info(shortcode: str):
+    """Fetch a post/reel's media info, rotating across configured Instagram
+    accounts (INSTAGRAM_USERNAME_2, ...) and failing over to the next account
+    when one looks rate-limited/logged-out."""
+    pool = _rotated_accounts()
+    last_err = ""
+    for loader in pool:
+        result = _get_post_info_with_loader(loader, shortcode)
+        if not result.get("error"):
+            return result
+        last_err = result["error"]
+        attempts = result.pop("_attempts", None) or [last_err]
+        if len(pool) > 1 and any(_rate_limited_error(a) for a in attempts):
+            logger.warning(f"{shortcode} looks rate-limited on this account; trying next account")
+            continue
+        break
 
     return {"error": last_err or f"no media URL available for {shortcode}"}
