@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 import threading
-from urllib.parse import unquote
+from urllib.parse import unquote, urljoin
 import re
 import time
 import random
@@ -521,14 +521,47 @@ def describe_accounts() -> list[dict]:
             "valid": has_valid_session(loader),
             "sessionid_len": len(get_sessionid(loader)),
             "logged_in": bool(loader.context.is_logged_in),
+            "cooling_down": _is_cooling_down(loader),
         }
         for suffix, loader in _ALL_ACCOUNTS
     ]
 
 
+# Per-account rate-limit cooldown: when Instagram tells an account to
+# "wait a few minutes" (or returns 401/403/login_required across the whole
+# fetch pipeline), avoid hammering it again immediately — prefer other
+# accounts in the pool for a while instead.
+_ACCOUNT_COOLDOWN_SEC = float(os.getenv("INSTAGRAM_RATE_LIMIT_COOLDOWN_SEC", "300"))
+_account_cooldown_until: dict[int, float] = {}
+
+
+def _mark_rate_limited(loader: Instaloader) -> None:
+    _account_cooldown_until[id(loader)] = time.time() + _ACCOUNT_COOLDOWN_SEC
+    logger.warning(
+        f"Marking account {_account_label_for(loader)!r} as rate-limited; "
+        f"deprioritizing for {_ACCOUNT_COOLDOWN_SEC:.0f}s"
+    )
+
+
+def _is_cooling_down(loader: Instaloader) -> bool:
+    until = _account_cooldown_until.get(id(loader))
+    return bool(until and until > time.time())
+
+
+def _account_label_for(loader: Instaloader) -> str:
+    for suffix, l in _ALL_ACCOUNTS:
+        if l is loader:
+            return _account_label(suffix)
+    return "unknown"
+
+
 def _rotated_accounts() -> list[Instaloader]:
     """Return the account pool reordered so consecutive calls start with a
-    different account (round-robin), with the rest kept as failover order."""
+    different account (round-robin), with the rest kept as failover order.
+
+    Accounts currently in a rate-limit cooldown are pushed to the end (but
+    not dropped — if every account is cooling down, we still try one rather
+    than failing outright)."""
     pool = get_account_pool()
     if len(pool) <= 1:
         return pool
@@ -536,7 +569,10 @@ def _rotated_accounts() -> list[Instaloader]:
     with _rotation_lock:
         start = _rotation_counter % len(pool)
         _rotation_counter += 1
-    return pool[start:] + pool[:start]
+    ordered = pool[start:] + pool[:start]
+    fresh = [a for a in ordered if not _is_cooling_down(a)]
+    cooling = [a for a in ordered if _is_cooling_down(a)]
+    return fresh + cooling
 
 # Public Instagram web app id; required by the private web API endpoints.
 IG_WEB_APP_ID = "936619743392459"
@@ -654,6 +690,34 @@ def _parse_web_api_item(item: dict, *, label: str) -> dict:
         comments=item.get("comment_count", 0) or 0,
         timestamp=timestamp,
     )
+
+
+def _get_with_redirect_cap(
+    session: requests.Session,
+    url: str,
+    *,
+    headers: dict,
+    timeout: float,
+    max_redirects: int = 5,
+) -> requests.Response:
+    """GET with a low redirect cap instead of requests' default 30.
+
+    When Instagram flags a session/IP, even "public" pages start bouncing
+    through login/challenge redirects repeatedly; chasing the default 30 hops
+    wastes several seconds per call before failing anyway. A few hops still
+    covers legitimate single redirects (e.g. /p/ <-> /reel/ canonicalization).
+    """
+    current_url = url
+    for _ in range(max_redirects + 1):
+        resp = session.get(current_url, headers=headers, timeout=timeout, allow_redirects=False)
+        if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("Location", "")
+            if not location:
+                return resp
+            current_url = urljoin(current_url, location)
+            continue
+        return resp
+    raise RuntimeError(f"exceeded {max_redirects} redirects (likely login/challenge loop) fetching {url}")
 
 
 def _fetch_via_web_api_mediaid(
@@ -808,9 +872,11 @@ def get_story_info(media_id: str, username: str = "") -> dict:
             return result
         last_err = result["error"]
         attempts = result.pop("_attempts", None) or [last_err]
-        if len(pool) > 1 and any(_rate_limited_error(a) for a in attempts):
-            logger.warning(f"Story {media_id} looks rate-limited on this account; trying next account")
-            continue
+        if any(_rate_limited_error(a) for a in attempts):
+            _mark_rate_limited(loader)
+            if len(pool) > 1:
+                logger.warning(f"Story {media_id} looks rate-limited on this account; trying next account")
+                continue
         break
 
     return {"error": last_err or f"no media URL available for story {media_id}"}
@@ -832,7 +898,7 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
     html = None
     for u in candidate_urls:
         try:
-            resp = session.get(u, headers=headers, timeout=20)
+            resp = _get_with_redirect_cap(session, u, headers=headers, timeout=20)
             logger.info(f"Fallback GET {u} -> {resp.status_code}")
             if resp.status_code == 200:
                 html = resp.text
@@ -954,7 +1020,7 @@ def _fetch_public_page_metadata(shortcode: str, session: requests.Session) -> di
         if not (video_url or image_url):
             for base in ("https://www.instagram.com/p/", "https://www.instagram.com/reel/"):
                 oembed_url = f"https://www.instagram.com/oembed/?url={base}{shortcode}/"
-                r = session.get(oembed_url, headers=headers, timeout=15)
+                r = _get_with_redirect_cap(session, oembed_url, headers=headers, timeout=15)
                 logger.info(f"oEmbed GET {oembed_url} -> {r.status_code}")
                 if r.status_code == 200:
                     data = r.json()
@@ -1080,9 +1146,11 @@ def get_post_info(shortcode: str):
             return result
         last_err = result["error"]
         attempts = result.pop("_attempts", None) or [last_err]
-        if len(pool) > 1 and any(_rate_limited_error(a) for a in attempts):
-            logger.warning(f"{shortcode} looks rate-limited on this account; trying next account")
-            continue
+        if any(_rate_limited_error(a) for a in attempts):
+            _mark_rate_limited(loader)
+            if len(pool) > 1:
+                logger.warning(f"{shortcode} looks rate-limited on this account; trying next account")
+                continue
         break
 
     return {"error": last_err or f"no media URL available for {shortcode}"}
