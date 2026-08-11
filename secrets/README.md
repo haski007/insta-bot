@@ -29,7 +29,7 @@ docker cp insta-bot-instloader-1:/data/session.json ./secrets/session.json
 
 ## Multiple accounts (rotation / failover)
 
-You can configure additional Instagram accounts with numeric suffixes in `.env`; instloader rotates requests across every account with a valid session and automatically retries on another account when one gets rate-limited (`login_required`, `429`, `403`, ...):
+You can configure additional Instagram accounts with numeric suffixes in `.env`; instloader rotates requests across every account with a valid session and automatically retries on another account when one gets rate-limited or challenged (`login_required`, `checkpoint_required`, `429`, `403`, ...):
 
 ```bash
 INSTAGRAM_USERNAME_2="second_account"
@@ -41,6 +41,8 @@ INSTAGRAM_PROXY_2="http://user:pass@isp.decodo.com:10002"   # recommended: a dif
 INSTAGRAM_USERNAME_3="third_account"
 # ...up to INSTAGRAM_USERNAME_10
 ```
+
+If logs show `checkpoint_required`, open Instagram in the app/browser for that account, complete the security challenge, then re-export a fresh session (`secrets/session.json` / `session_2.json`) and restart instloader. A session that still has a valid `sessionid` cookie can be checkpointed — `logged_in=True` does not mean the account is usable.
 
 If `INSTAGRAM_PROXY_N` is not set, that account falls back to the shared `INSTAGRAM_PROXY` — fine for testing, but running multiple accounts through the same IP makes them easier to correlate/ban together, so a dedicated proxy per account is recommended for real use.
 

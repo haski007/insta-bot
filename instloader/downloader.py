@@ -745,7 +745,7 @@ def _fetch_via_web_api_mediaid(
         location = resp.headers.get("Location", "")
         raise RuntimeError(f"web api redirected (likely login_required) -> {location!r}")
     if resp.status_code != 200:
-        raise RuntimeError(f"web api http {resp.status_code}")
+        raise RuntimeError(_web_api_error_message(resp))
 
     data = resp.json()
     items = data.get("items") or []
@@ -796,7 +796,48 @@ def _fetch_story_via_instaloader(loader: Instaloader, media_id: int) -> dict:
 
 def _rate_limited_error(msg: str) -> bool:
     """True when an error looks like a per-account block (worth trying another account)."""
-    return any(tok in msg for tok in ("429", "401", "403", "login_required", "wait a few minutes"))
+    lower = (msg or "").lower()
+    return any(
+        tok in lower
+        for tok in (
+            "429",
+            "401",
+            "403",
+            "login_required",
+            "checkpoint_required",
+            "challenge_required",
+            "feedback_required",
+            "wait a few minutes",
+        )
+    )
+
+
+def _web_api_error_message(resp: "requests.Response") -> str:
+    """Build a useful error from a non-200 web API response (incl. checkpoint bodies)."""
+    detail = ""
+    try:
+        data = resp.json()
+        if isinstance(data, dict):
+            detail = (
+                data.get("message")
+                or data.get("error_type")
+                or data.get("status")
+                or ""
+            )
+            # Instagram often nests the real reason under spam/checkpoint payloads
+            if not detail or detail in ("fail", "error"):
+                for key in ("error_title", "error_message", "checkpoint_url"):
+                    if data.get(key):
+                        detail = str(data.get(key))
+                        break
+            challenge = data.get("challenge") or data.get("challenge_required")
+            if challenge and "checkpoint" not in str(detail).lower():
+                detail = (f"{detail}; checkpoint_required" if detail else "checkpoint_required")
+    except Exception:
+        detail = (resp.text or "")[:200].strip()
+    if detail:
+        return f"web api http {resp.status_code}: {detail}"
+    return f"web api http {resp.status_code}"
 
 
 def _get_story_info_with_loader(loader: Instaloader, media_id: str, mediaid_int: int, username: str) -> dict:
@@ -828,6 +869,8 @@ def _get_story_info_with_loader(loader: Instaloader, media_id: str, mediaid_int:
     except Exception as e:
         attempts.append(str(e))
         logger.error(f"Web API failed for story {media_id}: {attempts[-1]}")
+        if _rate_limited_error(attempts[-1]):
+            return {"error": attempts[-1], "_attempts": attempts}
 
     try:
         result = _fetch_story_via_instaloader(loader, mediaid_int)
@@ -839,6 +882,8 @@ def _get_story_info_with_loader(loader: Instaloader, media_id: str, mediaid_int:
     except Exception as e:
         attempts.append(str(e))
         logger.error(f"Instaloader StoryItem failed for {media_id}: {attempts[-1]}")
+        if _rate_limited_error(attempts[-1]):
+            return {"error": attempts[-1], "_attempts": attempts}
 
     return {
         "error": (attempts[-1] if attempts else f"no media URL available for story {media_id}"),
@@ -1105,6 +1150,10 @@ def _get_post_info_with_loader(loader: Instaloader, shortcode: str) -> dict:
     except Exception as e:
         attempts.append(str(e))
         logger.error(f"Web API failed for {shortcode}: {attempts[-1]}")
+        # Session is challenged/blocked — HTML scrape with the same cookies is useless;
+        # bail early so get_post_info can rotate to another account.
+        if _rate_limited_error(attempts[-1]):
+            return {"error": attempts[-1], "_attempts": attempts}
 
     # 2) GraphQL via Instaloader (supports full carousels via sidecar nodes).
     try:
@@ -1115,6 +1164,8 @@ def _get_post_info_with_loader(loader: Instaloader, shortcode: str) -> dict:
     except Exception as e:
         attempts.append(str(e))
         logger.error(f"GraphQL failed for {shortcode}: {attempts[-1]}")
+        if _rate_limited_error(attempts[-1]):
+            return {"error": attempts[-1], "_attempts": attempts}
 
     # 3) Public page HTML scraping (OG tags / JSON-LD / inline JSON).
     try:
