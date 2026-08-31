@@ -195,7 +195,8 @@ func (rcv *InstaBotService) StartPool() error {
 					rcv.log.Infof("Ignore unsupported instagram url: %s", igURL)
 				}
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
-				go rcv.msgTwitterTrigger(update)
+				// go rcv.msgTwitterTrigger(update)
+				rcv.log.Infof("Ignore twitter: %s", update.Message.Text)
 
 			case isTikTokURL(update.Message.Text):
 				loaderEnabled, err := rcv.storage.IsChatLoaderEnabled(update.Message.Chat.ID)
