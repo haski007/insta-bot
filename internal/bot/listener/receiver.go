@@ -197,10 +197,16 @@ func (rcv *InstaBotService) StartPool() error {
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
 				go rcv.msgTwitterTrigger(update)
 
-			case strings.Contains(update.Message.Text, publisher.TikTokBaseUrl) ||
-				strings.Contains(update.Message.Text, publisher.TikTokShareBaseUrl):
-				//go rcv.msgTikTokTrigger(update)
-				rcv.log.Infof("Ignore tiktok: %s due to broken downloader", update.Message.Text)
+			case isTikTokURL(update.Message.Text):
+				loaderEnabled, err := rcv.storage.IsChatLoaderEnabled(update.Message.Chat.ID)
+				if err != nil {
+					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
+				}
+				if !loaderEnabled {
+					rcv.log.Infof("Ignore tiktok url: %s due to loader disabled", update.Message.Text)
+					break
+				}
+				go rcv.msgTikTokTrigger(update)
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
 				//go rcv.msgYoutubeTrigger(update)

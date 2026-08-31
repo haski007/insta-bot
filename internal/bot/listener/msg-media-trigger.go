@@ -22,7 +22,12 @@ const (
 	telegramAlbumMax = 10
 )
 
-var exprFindURL = regexp.MustCompile(`https?://[^\s]+`)
+var (
+	exprFindURL     = regexp.MustCompile(`https?://[^\s]+`)
+	mediaHTTPClient = &http.Client{Timeout: 60 * time.Second}
+)
+
+const mediaUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 const (
 	postSubstring = "/p/"
@@ -53,42 +58,56 @@ func extractShortcode(url string) (string, error) {
 	return shortcode, nil
 }
 
-// downloadVideo downloads a video from URL and returns file bytes
 func downloadVideo(videoURL string) (tgbotapi.FileBytes, error) {
-	resp, err := http.Get(videoURL)
+	body, err := downloadMediaBytes(videoURL)
 	if err != nil {
 		return tgbotapi.FileBytes{}, fmt.Errorf("download video: %w", err)
 	}
-	defer resp.Body.Close()
-
-	videoBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return tgbotapi.FileBytes{}, fmt.Errorf("read video bytes: %w", err)
-	}
-
 	return tgbotapi.FileBytes{
 		Name:  fmt.Sprintf("video_%d.mp4", time.Now().UnixNano()),
-		Bytes: videoBytes,
+		Bytes: body,
 	}, nil
 }
 
-// downloadImage downloads an image from URL and returns file bytes
 func downloadImage(imageURL string) (tgbotapi.FileBytes, error) {
-	resp, err := http.Get(imageURL)
+	body, err := downloadMediaBytes(imageURL)
 	if err != nil {
 		return tgbotapi.FileBytes{}, fmt.Errorf("download image: %w", err)
 	}
-	defer resp.Body.Close()
-
-	imageBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return tgbotapi.FileBytes{}, fmt.Errorf("read image bytes: %w", err)
-	}
-
 	return tgbotapi.FileBytes{
 		Name:  fmt.Sprintf("image_%d.jpg", time.Now().UnixNano()),
-		Bytes: imageBytes,
+		Bytes: body,
 	}, nil
+}
+
+func downloadMediaBytes(rawURL string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+	req.Header.Set("User-Agent", mediaUserAgent)
+	if strings.Contains(rawURL, "tikwm.com") {
+		req.Header.Set("Referer", "https://www.tikwm.com/")
+	}
+
+	resp, err := mediaHTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 50*1024*1024+1))
+	if err != nil {
+		return nil, fmt.Errorf("read body: %w", err)
+	}
+	if len(body) > 50*1024*1024 {
+		return nil, fmt.Errorf("file exceeds telegram bot limit")
+	}
+	return body, nil
 }
 
 // truncateCaption truncates caption to fit within character limit
