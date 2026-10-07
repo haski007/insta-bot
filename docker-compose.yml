@@ -63,6 +63,19 @@ services:
       - loki
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - bot
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:11.5.2
     ports:
@@ -78,10 +91,12 @@ services:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - loki
+      - prometheus
     restart: unless-stopped
 
 volumes:
   redis-data:
   instloader-data:
   loki-data:
+  prometheus-data:
   grafana-data:

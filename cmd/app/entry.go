@@ -171,6 +171,10 @@ func Run(ctx context.Context, args run.Args) error {
 		return fmt.Errorf("run afterFunc polls err: %w", err)
 	}
 
+	if err := botSrv.RegisterCommands(); err != nil {
+		log.WithError(err).Warn("register bot commands")
+	}
+
 	// run a monitor that checks if redis is not read only
 	go botSrv.RedisMonitor()
 

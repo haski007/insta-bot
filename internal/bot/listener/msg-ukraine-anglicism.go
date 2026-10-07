@@ -35,6 +35,13 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	if rcv.openRouter == nil || update.Message == nil {
 		return
 	}
+
+	start := time.Now()
+	outcome := anglicismOutcomeSkipped
+	defer func() {
+		anglicismHandlerDuration.WithLabelValues(outcome).Observe(time.Since(start).Seconds())
+	}()
+
 	msg := update.Message
 	if msg.From != nil && msg.From.IsBot {
 		return
@@ -58,6 +65,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 		return
 	}
 	if !subscribed {
+		outcome = anglicismOutcomeNotSubscribed
 		return
 	}
 
@@ -68,6 +76,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 			if err != nil {
 				rcv.log.WithError(err).Error("[msgUkraineAnglicismIfNeeded] UkraineAnglicismIgnoreContains")
 			} else if ignored {
+				outcome = anglicismOutcomeIgnoredUser
 				return
 			}
 		}
@@ -76,18 +85,23 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	ctx, cancel := context.WithTimeout(rcv.ctx, 50*time.Second)
 	defer cancel()
 
+	llmStart := time.Now()
 	res, err := rcv.openRouter.AnalyzeAnglicisms(ctx, text)
+	observeLLMRequest("openrouter", "anglicism", llmStart, err)
 	if err != nil {
+		outcome = anglicismOutcomeLLMError
 		rcv.log.WithError(err).Warn("[msgUkraineAnglicismIfNeeded] AnalyzeAnglicisms")
 		return
 	}
 	if res == nil || !res.HasAnglicism || res.Rewritten == "" {
+		outcome = anglicismOutcomeNoAnglicism
 		return
 	}
 
 	out := formatAnglicismRewrittenPlain(res.Rewritten)
 
 	rcv.deliverAnglicismReply(msg.Chat.ID, msg.MessageID, out)
+	outcome = anglicismOutcomeReplied
 }
 
 // deliverAnglicismReply chooses delivery based on env mode:
