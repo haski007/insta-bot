@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 // LLM returns markers like {{українське}}(було: англіцизм); we keep only the Ukrainian replacement in the reply.
@@ -39,7 +40,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	start := time.Now()
 	outcome := anglicismOutcomeSkipped
 	defer func() {
-		anglicismHandlerDuration.WithLabelValues(outcome).Observe(time.Since(start).Seconds())
+		metrics.ObserveAnglicismHandler(outcome, start)
 	}()
 
 	msg := update.Message
@@ -85,9 +86,7 @@ func (rcv *InstaBotService) msgUkraineAnglicismIfNeeded(update tgbotapi.Update) 
 	ctx, cancel := context.WithTimeout(rcv.ctx, 50*time.Second)
 	defer cancel()
 
-	llmStart := time.Now()
 	res, err := rcv.openRouter.AnalyzeAnglicisms(ctx, text)
-	observeLLMRequest("openrouter", "anglicism", llmStart, err)
 	if err != nil {
 		outcome = anglicismOutcomeLLMError
 		rcv.log.WithError(err).Warn("[msgUkraineAnglicismIfNeeded] AnalyzeAnglicisms")
@@ -165,7 +164,7 @@ func (rcv *InstaBotService) deliverAnglicismEscalating(chatID int64, messageID i
 // sendAnglicismPlain sends a plain (non-reply) text message and returns its ID.
 func (rcv *InstaBotService) sendAnglicismPlain(chatID int64, text string) (int, error) {
 	msg := tgbotapi.NewMessage(chatID, text)
-	sent, err := rcv.bot.Send(msg)
+	sent, err := rcv.sendAPI(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -191,7 +190,7 @@ func (rcv *InstaBotService) sendAnglicismPhotoCard(chatID int64, replyToID int, 
 		Bytes: cardPNG,
 	})
 	photo.ReplyToMessageID = replyToID
-	sent, err := rcv.bot.Send(photo)
+	sent, err := rcv.sendAPI(photo)
 	if err != nil {
 		return 0, err
 	}

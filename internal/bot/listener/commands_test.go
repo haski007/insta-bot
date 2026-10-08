@@ -15,7 +15,7 @@ func TestCommandHintsMatchReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	handled := map[string]bool{}
-	for _, m := range regexp.MustCompile(`command == "([a-z0-9_]+)"`).FindAllStringSubmatch(string(src), -1) {
+	for _, m := range regexp.MustCompile(`case "([a-z0-9_]+)":`).FindAllStringSubmatch(string(src), -1) {
 		handled[m[1]] = true
 	}
 	handled["w"] = true

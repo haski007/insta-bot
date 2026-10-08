@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/haski007/insta-bot/internal/metrics"
 
 	"github.com/haski007/insta-bot/internal/bot/model"
 	"github.com/haski007/insta-bot/internal/clients/instloader"
@@ -80,7 +83,30 @@ func downloadImage(imageURL string) (tgbotapi.FileBytes, error) {
 	}, nil
 }
 
+func mediaDownloadSource(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "other"
+	}
+	host := strings.ToLower(parsed.Hostname())
+	switch {
+	case strings.Contains(host, "tiktok") || strings.Contains(host, "tikwm"):
+		return "tiktok"
+	case strings.Contains(host, "instagram") || strings.Contains(host, "cdninstagram") || strings.Contains(host, "fbcdn"):
+		return "instagram"
+	default:
+		return "other"
+	}
+}
+
 func downloadMediaBytes(rawURL string) ([]byte, error) {
+	start := time.Now()
+	body, err := downloadMediaBytesUnmetered(rawURL)
+	metrics.ObserveMediaDownload(mediaDownloadSource(rawURL), start, err)
+	return body, err
+}
+
+func downloadMediaBytesUnmetered(rawURL string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("new request: %w", err)
@@ -205,7 +231,7 @@ func (rcv *InstaBotService) sendSingleInstagramMedia(
 	photoConfig.Caption = caption
 	photoConfig.ReplyToMessageID = messageID
 
-	if _, err := rcv.bot.Send(photoConfig); err != nil {
+	if _, err := rcv.sendAPI(photoConfig); err != nil {
 		rcv.log.WithError(err).Error("[msgInstagramTrigger] send photo")
 		rcv.sendInstagramFallback(chatID, postInfo, false)
 	}
@@ -280,7 +306,7 @@ func (rcv *InstaBotService) sendInstagramAlbum(
 
 		album := tgbotapi.NewMediaGroup(chatID, media)
 		album.ReplyToMessageID = messageID
-		if _, err := rcv.bot.SendMediaGroup(album); err != nil {
+		if _, err := rcv.sendMediaGroupAPI(album); err != nil {
 			rcv.log.WithError(err).Errorf("[msgInstagramTrigger] send media group (%d items)", len(chunk))
 			rcv.sendInstagramFallback(chatID, postInfo, false)
 			return

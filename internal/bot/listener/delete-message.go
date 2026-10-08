@@ -9,7 +9,7 @@ import (
 func (rcv *InstaBotService) DeleteMessage(chatID int64, messageID int) error {
 	req := tgbotapi.NewDeleteMessage(chatID, messageID)
 
-	_, err := rcv.bot.Send(req)
+	_, err := rcv.sendAPI(req)
 	if err != nil {
 		if _, ok := err.(*json.UnmarshalTypeError); !ok {
 			return err

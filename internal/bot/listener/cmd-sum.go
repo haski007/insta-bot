@@ -44,7 +44,7 @@ func (rcv *InstaBotService) cmdSum(update tgbotapi.Update) {
 		return
 	}
 
-	if _, err := rcv.bot.Send(tgbotapi.NewMessage(chatID, summarized)); err != nil {
+	if _, err := rcv.sendAPI(tgbotapi.NewMessage(chatID, summarized)); err != nil {
 		rcv.SendError(chatID, ErrInternalServerError)
 		rcv.log.WithError(err).Error("[cmdSum] send summarized")
 		return

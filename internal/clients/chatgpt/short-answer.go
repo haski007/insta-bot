@@ -3,7 +3,9 @@ package chatgpt
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -11,7 +13,12 @@ const (
 	QuestionDelimiter = "```"
 )
 
-func (srv *Service) GetShortAnswer(ctx context.Context, question string) (string, error) {
+func (srv *Service) GetShortAnswer(ctx context.Context, question string) (answer string, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveLLM("openai", "short_answer", start, err)
+	}()
+
 	prompt := fmt.Sprintf(`You  will be provided with a question 
 delimited with triple backticks,
 You should answer this question by a shortest way 

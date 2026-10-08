@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -28,7 +30,7 @@ const anglicismSystemPrompt = `Ти допомагаєш україномовн�
 
 Якщо є — поверни JSON: {"has_anglicism":true,"rewritten":"..."} де rewritten — той самий текст повідомлення, але кожен виправлений фрагмент СТРОГО в форматі {{український відповідник}}(було: англіцизм) без змін у написанні дужок і слова «було:». Інший текст без HTML/markdown. Відповідай лише одним JSON-об'єктом без пояснень.`
 
-func (s *Service) AnalyzeAnglicisms(ctx context.Context, userMessage string) (*AnglicismResult, error) {
+func (s *Service) AnalyzeAnglicisms(ctx context.Context, userMessage string) (result *AnglicismResult, err error) {
 	if s == nil || s.ai == nil {
 		return nil, fmt.Errorf("openrouter: service not configured")
 	}
@@ -36,6 +38,11 @@ func (s *Service) AnalyzeAnglicisms(ctx context.Context, userMessage string) (*A
 	if sanitized == "" {
 		return &AnglicismResult{HasAnglicism: false, Rewritten: ""}, nil
 	}
+
+	start := time.Now()
+	defer func() {
+		metrics.ObserveLLM("openrouter", "anglicism", start, err)
+	}()
 
 	userPrompt := buildAnglicismUserPrompt(sanitized)
 	res, err := s.ai.CreateChatCompletion(ctx, openai.ChatCompletionRequest{

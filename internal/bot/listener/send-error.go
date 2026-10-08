@@ -9,7 +9,7 @@ import (
 func (rcv *InstaBotService) SendError(chatID int64, msg string) {
 	answer := tgbotapi.NewMessage(chatID, emoji.Warning+msg+emoji.Warning)
 
-	if _, errN := rcv.bot.Send(answer); errN != nil {
+	if _, errN := rcv.sendAPI(answer); errN != nil {
 		rcv.log.WithError(errN).Println("send error message to chat")
 	}
 }

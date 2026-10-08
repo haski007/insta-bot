@@ -37,7 +37,7 @@ func (rcv *InstaBotService) sendInstagramBait(chatID int64) (int, error) {
 	msg.ParseMode = tgbotapi.ModeHTML
 	msg.DisableWebPagePreview = true
 	msg.DisableNotification = true
-	sent, err := rcv.bot.Send(msg)
+	sent, err := rcv.sendAPI(msg)
 	if err != nil {
 		return 0, err
 	}

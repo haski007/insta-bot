@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 const (
@@ -46,7 +49,12 @@ type GetARCEventsOptions struct {
 	Name string
 }
 
-func (c *Client) GetARCEvents(opts *GetARCEventsOptions) ([]EventTimer, error) {
+func (c *Client) GetARCEvents(opts *GetARCEventsOptions) (events []EventTimer, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveExternal("arc_raiders", "events", start, err)
+	}()
+
 	req := http.Request{
 		Method: http.MethodGet,
 		URL:    c.BaseURL,

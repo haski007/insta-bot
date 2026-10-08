@@ -6,6 +6,7 @@ import (
 	"time"
 
 	arcraiders "github.com/haski007/insta-bot/internal/clients/arc-raiders"
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 const (
@@ -41,7 +42,9 @@ LOOP:
 			break LOOP
 		case t := <-ticker.C:
 			if t.In(location).Hour() == timeToCheck.Hour() && t.In(location).Minute() == timeToCheck.Minute() {
-				if err := rcv.checkAndNotifyARCEvents(); err != nil {
+				err := rcv.checkAndNotifyARCEvents()
+				metrics.ObserveMonitor("arc", err)
+				if err != nil {
 					rcv.log.WithError(err).Error("[RunARCMonitor] checkAndNotifyARCEvents")
 					rcv.NotifyCreator(fmt.Sprintf("[RunARCMonitor] checkAndNotifyARCEvents err: %s\n", err))
 				}

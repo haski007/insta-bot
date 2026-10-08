@@ -107,7 +107,7 @@ func (rcv *InstaBotService) sendTikTokMedia(chatID int64, messageID int, items [
 		}
 		album := tgbotapi.NewMediaGroup(chatID, media)
 		album.ReplyToMessageID = messageID
-		if _, err := rcv.bot.SendMediaGroup(album); err != nil {
+		if _, err := rcv.sendMediaGroupAPI(album); err != nil {
 			return fmt.Errorf("send media group: %w", err)
 		}
 	}
@@ -135,7 +135,7 @@ func (rcv *InstaBotService) sendSingleTikTokItem(chatID int64, messageID int, it
 	}
 	photoConfig := tgbotapi.NewPhoto(chatID, imageFile)
 	photoConfig.ReplyToMessageID = messageID
-	if _, err := rcv.bot.Send(photoConfig); err != nil {
+	if _, err := rcv.sendAPI(photoConfig); err != nil {
 		return fmt.Errorf("send photo: %w", err)
 	}
 	return nil

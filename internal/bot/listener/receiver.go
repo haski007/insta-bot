@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"github.com/haski007/insta-bot/internal/bot/publisher"
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/haski007/insta-bot/pkg/emoji"
-	"github.com/haski007/insta-bot/pkg/safego"
 	"github.com/sirupsen/logrus"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func (rcv *InstaBotService) StartPool() error {
@@ -25,6 +27,8 @@ func (rcv *InstaBotService) StartPool() error {
 	}
 
 	for update := range rcv.updates {
+		metrics.IncUpdate(updateKind(update))
+
 		if update.EditedMessage != nil || update.Poll != nil {
 			continue
 		}
@@ -51,125 +55,118 @@ func (rcv *InstaBotService) StartPool() error {
 		}
 
 		// if it's any type of media but the caption contains command /w
-		if update.Message.Command() == "w" || strings.HasPrefix(update.Message.Caption, "/w") {
-			go rcv.cmdWriteToChat(update)
+		if update.Message != nil && (update.Message.Command() == "w" || strings.HasPrefix(update.Message.Caption, "/w")) {
+			rcv.goCommand("w", update, rcv.cmdWriteToChat)
 			continue
 		}
 
-		go rcv.streamMessageToChats(update.Message)
+		if update.Message != nil {
+			go rcv.streamMessageToChats(update.Message)
+		}
 
 		// ---> Commands
 		if update.Message != nil && update.Message.IsCommand() {
 			command := update.Message.Command()
-			switch {
-			case command == "test":
-				go rcv.cmdTestHandler(update)
-			case command == "help":
-				go rcv.cmdStartHandler(update)
+			switch command {
+			case "test":
+				rcv.goCommand(command, update, rcv.cmdTestHandler)
+			case "help":
+				rcv.goCommand(command, update, rcv.cmdStartHandler)
 
-			case command == "set_quality":
-				go rcv.cmdSetQualityHandler(update)
+			case "set_quality":
+				rcv.goCommand(command, update, rcv.cmdSetQualityHandler)
 
-			case command == "list_players":
-				go rcv.cmdListPlayersHandler(update)
+			case "list_players":
+				rcv.goCommand(command, update, rcv.cmdListPlayersHandler)
 
-			// CSGO addon ^)
-			case command == "reg_csgo_players":
-				go rcv.cmdRegCSGOPlayersHandler(update)
-			case command == "purge_csgo_players":
-				go rcv.cmdPurgeCSGOPlayersHandler(update)
+			case "reg_csgo_players":
+				rcv.goCommand(command, update, rcv.cmdRegCSGOPlayersHandler)
+			case "purge_csgo_players":
+				rcv.goCommand(command, update, rcv.cmdPurgeCSGOPlayersHandler)
 
-			case command == "lets_play":
-				go rcv.cmdLetsPlayHandler(update)
+			case "lets_play":
+				rcv.goCommand(command, update, rcv.cmdLetsPlayHandler)
 
-			// PUBG addon ^)
-			case command == "reg_pubg_players":
-				go rcv.cmdRegPUBGPlayersHandler(update)
-			case command == "purge_pubg_players":
-				go rcv.cmdPurgePUBGPlayersHandler(update)
-			case command == "lets_play_pubg":
-				go rcv.cmdLetsPlayPUBGHandler(update)
+			case "reg_pubg_players":
+				rcv.goCommand(command, update, rcv.cmdRegPUBGPlayersHandler)
+			case "purge_pubg_players":
+				rcv.goCommand(command, update, rcv.cmdPurgePUBGPlayersHandler)
+			case "lets_play_pubg":
+				rcv.goCommand(command, update, rcv.cmdLetsPlayPUBGHandler)
 
-			// Finals addon ^)
-			case command == "reg_finals_players":
-				go rcv.cmdRegFinalsPlayersHandler(update)
-			case command == "purge_finals_players":
-				go rcv.cmdPurgeFinalsPlayersHandler(update)
-			case command == "lets_play_finals":
-				go rcv.cmdLetsPlayFinalsHandler(update)
+			case "reg_finals_players":
+				rcv.goCommand(command, update, rcv.cmdRegFinalsPlayersHandler)
+			case "purge_finals_players":
+				rcv.goCommand(command, update, rcv.cmdPurgeFinalsPlayersHandler)
+			case "lets_play_finals":
+				rcv.goCommand(command, update, rcv.cmdLetsPlayFinalsHandler)
 
-			// Users
-			case command == "set_email":
-				go rcv.cmdSetEmailHandler(update)
+			case "set_email":
+				rcv.goCommand(command, update, rcv.cmdSetEmailHandler)
 
-			case command == "set_system_role":
-				go rcv.cmdSetSystemRoleHandler(update)
-			case command == "drop_my_gpt":
-				go rcv.cmdDropGPTConversationHandler(update)
-			case command == "drop_my_grok":
-				go rcv.cmdDropGrokConversationHandler(update)
+			case "set_system_role":
+				rcv.goCommand(command, update, rcv.cmdSetSystemRoleHandler)
+			case "drop_my_gpt":
+				rcv.goCommand(command, update, rcv.cmdDropGPTConversationHandler)
+			case "drop_my_grok":
+				rcv.goCommand(command, update, rcv.cmdDropGrokConversationHandler)
 
-			case command == "spam":
-				go rcv.cmdSpam(update)
+			case "spam":
+				rcv.goCommand(command, update, rcv.cmdSpam)
 
-			case command == "sub_to_startup":
-				go rcv.cmdSubToStartupHandler(update)
-			case command == "unsub_to_startup":
-				go rcv.cmdUnsubToStartupHandler(update)
+			case "sub_to_startup":
+				rcv.goCommand(command, update, rcv.cmdSubToStartupHandler)
+			case "unsub_to_startup":
+				rcv.goCommand(command, update, rcv.cmdUnsubToStartupHandler)
 
-			case command == "disable_loader":
-				go rcv.cmdDisableLoaderHandler(update)
-			case command == "enable_loader":
-				go rcv.cmdEnableLoaderHandler(update)
+			case "disable_loader":
+				rcv.goCommand(command, update, rcv.cmdDisableLoaderHandler)
+			case "enable_loader":
+				rcv.goCommand(command, update, rcv.cmdEnableLoaderHandler)
 
-			case command == "sub_arc_events":
-				go rcv.cmdSubARCEventHandler(update)
-			case command == "unsub_arc_events":
-				go rcv.cmdUnsubARCEventHandler(update)
-			case command == "arc":
-				go rcv.cmdListArcEventsHandler(update)
+			case "sub_arc_events":
+				rcv.goCommand(command, update, rcv.cmdSubARCEventHandler)
+			case "unsub_arc_events":
+				rcv.goCommand(command, update, rcv.cmdUnsubARCEventHandler)
+			case "arc":
+				rcv.goCommand(command, update, rcv.cmdListArcEventsHandler)
 
-			case command == "ukraine_for_ukrainians":
-				go rcv.cmdUkraineForUkrainiansSub(update)
-			case command == "unsub_ukraine_for_ukrainians":
-				go rcv.cmdUkraineForUkrainiansUnsub(update)
+			case "ukraine_for_ukrainians":
+				rcv.goCommand(command, update, rcv.cmdUkraineForUkrainiansSub)
+			case "unsub_ukraine_for_ukrainians":
+				rcv.goCommand(command, update, rcv.cmdUkraineForUkrainiansUnsub)
 
-			case command == "ignore":
-				go rcv.cmdUkraineAnglicismIgnore(update)
-			case command == "unignore":
-				go rcv.cmdUkraineAnglicismUnignore(update)
+			case "ignore":
+				rcv.goCommand(command, update, rcv.cmdUkraineAnglicismIgnore)
+			case "unignore":
+				rcv.goCommand(command, update, rcv.cmdUkraineAnglicismUnignore)
 
-			case command == "sum":
-				safego.New(func() {
-					rcv.cmdSum(update)
-				}, func(pErr any) {
-					rcv.log.WithError(fmt.Errorf("%s", pErr)).Error("[cmdSum] panic")
-					rcv.NotifyCreator(fmt.Sprintf("%s cmdSum panic: %s", emoji.NoEntry, pErr))
-				})
-			case command == "purge_history":
-				go rcv.cmdPurgeHistory(update)
+			case "sum":
+				rcv.goCommandSafe(command, update, rcv.cmdSum)
+			case "purge_history":
+				rcv.goCommand(command, update, rcv.cmdPurgeHistory)
 
-			case command == "stream_chat":
-				go rcv.cmdStreamChat(update)
-			case command == "stop_stream_chat":
-				go rcv.cmdStopStreamChat(update)
-			case command == "get_streams":
-				go rcv.cmdGetStreamingChats(update)
+			case "stream_chat":
+				rcv.goCommand(command, update, rcv.cmdStreamChat)
+			case "stop_stream_chat":
+				rcv.goCommand(command, update, rcv.cmdStopStreamChat)
+			case "get_streams":
+				rcv.goCommand(command, update, rcv.cmdGetStreamingChats)
 
-			case command == "fuck":
-				go rcv.cmdFuck(update)
-			case command == "unfuck":
-				go rcv.cmdUnfuck(update)
+			case "fuck":
+				rcv.goCommand(command, update, rcv.cmdFuck)
+			case "unfuck":
+				rcv.goCommand(command, update, rcv.cmdUnfuck)
 
 			default:
-				go func() {
+				rcv.goCommand("unknown", update, func(update tgbotapi.Update) {
 					if err := rcv.SendMessage(
 						update.Message.Chat.ID,
 						"Such command does not exist! "+emoji.NoEntry,
 					); err != nil {
 						logrus.WithError(err).Printf("send message to chat: %d", update.Message.Chat.ID)
 					}
-				}()
+				})
 			}
 		}
 
@@ -182,20 +179,22 @@ func (rcv *InstaBotService) StartPool() error {
 					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
 				}
 				if !loaderEnabled {
+					metrics.IncRoute("instagram_disabled")
 					rcv.log.Infof("Ignore instagram url: %s due to loader disabled", update.Message.Text)
 					break
 				}
 				igURL := exprFindURL.FindString(update.Message.Text)
 				switch {
 				case strings.Contains(igURL, "/stories/"):
-					go rcv.msgStoriesTrigger(update)
+					rcv.goMessage("stories", update, rcv.msgStoriesTrigger)
 				case strings.Contains(igURL, "/p/"), strings.Contains(igURL, "/reel/"):
-					go rcv.msgInstagramTrigger(update)
+					rcv.goMessage("instagram", update, rcv.msgInstagramTrigger)
 				default:
+					metrics.IncRoute("instagram_unsupported")
 					rcv.log.Infof("Ignore unsupported instagram url: %s", igURL)
 				}
 			case strings.Contains(update.Message.Text, publisher.TwitterBaseUrl), strings.Contains(update.Message.Text, publisher.TwitterOLDBaseUrl):
-				// go rcv.msgTwitterTrigger(update)
+				metrics.IncRoute("twitter_ignored")
 				rcv.log.Infof("Ignore twitter: %s", update.Message.Text)
 
 			case isTikTokURL(update.Message.Text):
@@ -204,28 +203,29 @@ func (rcv *InstaBotService) StartPool() error {
 					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
 				}
 				if !loaderEnabled {
+					metrics.IncRoute("tiktok_disabled")
 					rcv.log.Infof("Ignore tiktok url: %s due to loader disabled", update.Message.Text)
 					break
 				}
-				go rcv.msgTikTokTrigger(update)
+				rcv.goMessage("tiktok", update, rcv.msgTikTokTrigger)
 
 			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
-				//go rcv.msgYoutubeTrigger(update)
+				metrics.IncRoute("youtube_ignored")
 				rcv.log.Infof("Ignore youtube: %s due to broken downloader", update.Message.Text)
 
 			case strings.HasPrefix(update.Message.Text, "?") && len(update.Message.Text) > 1:
-				go rcv.msgChatGPTQuestion(update)
+				rcv.goMessage("gpt_question", update, rcv.msgChatGPTQuestion)
 			case strings.HasPrefix(update.Message.Text, "!") && len(update.Message.Text) > 1:
-				go rcv.msgChatGTPConversation(update)
+				rcv.goMessage("gpt_conversation", update, rcv.msgChatGTPConversation)
 			case strings.HasPrefix(update.Message.Text, "~") && len(update.Message.Text) > 1:
-				go rcv.msgGPTextToSpeech(update)
+				rcv.goMessage("tts", update, rcv.msgGPTextToSpeech)
 
 			case strings.HasPrefix(update.Message.Text, "g?") && len(update.Message.Text) > 2:
-				go rcv.msgGrokQuestion(update)
+				rcv.goMessage("grok_question", update, rcv.msgGrokQuestion)
 			case strings.HasPrefix(update.Message.Text, "g!") && len(update.Message.Text) > 2:
-				go rcv.msgGrokConversation(update)
+				rcv.goMessage("grok_conversation", update, rcv.msgGrokConversation)
 			default:
-				go rcv.msgUkraineAnglicismIfNeeded(update)
+				rcv.goMessage("anglicism", update, rcv.msgUkraineAnglicismIfNeeded)
 			}
 			// ---> save to history
 			go rcv.msgSaveToHistory(update)

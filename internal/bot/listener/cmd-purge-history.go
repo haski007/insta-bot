@@ -15,7 +15,7 @@ func (rcv *InstaBotService) cmdPurgeHistory(update tgbotapi.Update) {
 		return
 	}
 
-	if _, err := rcv.bot.Send(tgbotapi.NewMessage(chatID, "History purged "+emoji.Basket)); err != nil {
+	if _, err := rcv.sendAPI(tgbotapi.NewMessage(chatID, "History purged "+emoji.Basket)); err != nil {
 		rcv.SendError(chatID, ErrInternalServerError)
 		rcv.log.WithError(err).Error("[cmdPurgeHistory] chat history purged")
 		return

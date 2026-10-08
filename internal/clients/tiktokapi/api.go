@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/haski007/insta-bot/internal/bot"
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/haski007/insta-bot/pkg/file"
 )
 
@@ -90,7 +91,12 @@ func (rcv *TikTokClient) GetVideoDataFromUrl(rawURL string) (bot.TikTokVideo, er
 	return media, nil
 }
 
-func (rcv *TikTokClient) GetMedia(rawURL string) (*Media, error) {
+func (rcv *TikTokClient) GetMedia(rawURL string) (media *Media, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveExternal("tiktok", "get_media", start, err)
+	}()
+
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" {
 		return nil, fmt.Errorf("empty tiktok url")

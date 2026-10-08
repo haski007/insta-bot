@@ -67,7 +67,7 @@ func (rcv *InstaBotService) streamMessageToChats(message *tgbotapi.Message) {
 	if value, ok := rcv.streamChats.Load(message.Chat.ID); ok {
 		chatsToStream := value.([]int64)
 		for _, chatID := range chatsToStream {
-			rcv.bot.Send(tgbotapi.NewForward(chatID, message.Chat.ID, message.MessageID))
+			rcv.sendAPI(tgbotapi.NewForward(chatID, message.Chat.ID, message.MessageID))
 			logrus.WithField("from_chat_id", chatID).WithField("from_chat_title", message.Chat.Title).Info("message was forwarded")
 		}
 	}

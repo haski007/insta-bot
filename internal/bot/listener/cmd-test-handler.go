@@ -32,7 +32,7 @@ func (rcv *InstaBotService) cmdTestHandler(update tgbotapi.Update) {
 		logrus.WithError(err).Println("[cmdTestHandler] send message to chat")
 	}
 
-	if _, err := rcv.bot.Send(invoice); err != nil {
+	if _, err := rcv.sendAPI(invoice); err != nil {
 		logrus.WithError(err).Println("send invoice")
 	}
 }

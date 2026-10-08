@@ -6,6 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
+
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 type Client struct {
@@ -77,7 +81,21 @@ func (c *Client) GetStoryInfo(mediaID, username string) (PostInfo, error) {
 	return c.getMediaInfo(reqURL)
 }
 
-func (c *Client) getMediaInfo(reqURL url.URL) (PostInfo, error) {
+func instloaderOperation(reqURL url.URL) string {
+	switch strings.Trim(reqURL.Path, "/") {
+	case "story":
+		return "story"
+	default:
+		return "post"
+	}
+}
+
+func (c *Client) getMediaInfo(reqURL url.URL) (info PostInfo, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveExternal("instloader", instloaderOperation(reqURL), start, err)
+	}()
+
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return PostInfo{}, fmt.Errorf("create request: %w", err)

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/haski007/insta-bot/internal/storage"
 )
 
@@ -25,6 +26,12 @@ func NewClient(conn *redis.Client, convTTL time.Duration, historyTTL time.Durati
 }
 
 func (r *redisClient) IsReadOnly() (readOnly bool, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveRedis("write_probe", start, err)
+		metrics.SetRedisReadonly(readOnly)
+	}()
+
 	if err := r.conn.Set("test-write-rights", true, time.Second).Err(); err != nil {
 		return true, err
 	}

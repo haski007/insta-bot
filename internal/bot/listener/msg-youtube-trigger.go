@@ -90,7 +90,7 @@ func (rcv *InstaBotService) msgYoutubeTrigger(update tgbotapi.Update) {
 	videoMessage := tgbotapi.NewVideo(chatID, fileBytes)
 	videoMessage.ParseMode = tgbotapi.ModeMarkdown
 	videoMessage.Caption = message
-	if _, err := rcv.bot.Send(videoMessage); err != nil {
+	if _, err := rcv.sendAPI(videoMessage); err != nil {
 		rcv.log.WithError(err).Error("[msgYoutubeTrigger] send video message")
 		return
 	}

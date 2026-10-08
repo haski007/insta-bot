@@ -4,12 +4,19 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/haski007/insta-bot/internal/metrics"
 	"github.com/sashabaranov/go-openai"
 )
 
 // SummarizeMessages handles messages larger than 4096 tokens.
-func (srv *Service) SummarizeMessages(ctx context.Context, messages []string, question string) (string, error) {
+func (srv *Service) SummarizeMessages(ctx context.Context, messages []string, question string) (summary string, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveLLM("openai", "summarize", start, err)
+	}()
+
 	// Assume maxTokens is the maximum number of tokens allowed in a single request.
 	const maxTokens = 4096 * 2
 

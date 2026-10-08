@@ -6,7 +6,7 @@ func (rcv *InstaBotService) SendMessage(chatID int64, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 	message.ParseMode = tgbotapi.ModeMarkdown
 
-	_, err := rcv.bot.Send(message)
+	_, err := rcv.sendAPI(message)
 	return err
 }
 
@@ -15,7 +15,7 @@ func (rcv *InstaBotService) Reply(chatID int64, messageID int, text string) erro
 	message.ParseMode = tgbotapi.ModeMarkdown
 	message.ReplyToMessageID = messageID
 
-	_, err := rcv.bot.Send(message)
+	_, err := rcv.sendAPI(message)
 	return err
 }
 
@@ -23,7 +23,7 @@ func (rcv *InstaBotService) Reply(chatID int64, messageID int, text string) erro
 func (rcv *InstaBotService) ReplyPlain(chatID int64, messageID int, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 	message.ReplyToMessageID = messageID
-	_, err := rcv.bot.Send(message)
+	_, err := rcv.sendAPI(message)
 	return err
 }
 
@@ -35,7 +35,7 @@ func (rcv *InstaBotService) ReplyPhoto(chatID int64, messageID int, imgBytes []b
 	})
 	photo.Caption = caption
 	photo.ReplyToMessageID = messageID
-	_, err := rcv.bot.Send(photo)
+	_, err := rcv.sendAPI(photo)
 	return err
 }
 
@@ -47,7 +47,7 @@ func (rcv *InstaBotService) ReplyVideoBytes(chatID int64, messageID int, videoBy
 	})
 	video.Caption = caption
 	video.ReplyToMessageID = messageID
-	_, err := rcv.bot.Send(video)
+	_, err := rcv.sendAPI(video)
 	return err
 }
 
@@ -56,7 +56,7 @@ func (rcv *InstaBotService) ReplyHTML(chatID int64, messageID int, text string) 
 	message := tgbotapi.NewMessage(chatID, text)
 	message.ParseMode = tgbotapi.ModeHTML
 	message.ReplyToMessageID = messageID
-	_, err := rcv.bot.Send(message)
+	_, err := rcv.sendAPI(message)
 	return err
 }
 
@@ -65,7 +65,7 @@ func (rcv *InstaBotService) ReplyAudio(chatID int64, messageID int, audio tgbota
 	message.ReplyToMessageID = messageID
 	message.AllowSendingWithoutReply = true
 
-	_, err := rcv.bot.Send(audio)
+	_, err := rcv.sendAPI(audio)
 	return err
 }
 
@@ -75,14 +75,14 @@ func (rcv *InstaBotService) ReplyVideo(chatID int64, messageID int, video tgbota
 	message.AllowSendingWithoutReply = true
 	message.Text = caption
 
-	_, err := rcv.bot.Send(video)
+	_, err := rcv.sendAPI(video)
 	return err
 }
 
 func (rcv *InstaBotService) SendMessageWithoutMarkdown(chatID int64, text string) error {
 	message := tgbotapi.NewMessage(chatID, text)
 
-	_, err := rcv.bot.Send(message)
+	_, err := rcv.sendAPI(message)
 	return err
 }
 
@@ -92,6 +92,6 @@ func (rcv *InstaBotService) CreatePoll(
 ) (pollID tgbotapi.Message, err error) {
 	answer := tgbotapi.NewPoll(chatID, caption, options...)
 	answer.IsAnonymous = isAnon
-	rsp, err := rcv.bot.Send(answer)
+	rsp, err := rcv.sendAPI(answer)
 	return rsp, err
 }

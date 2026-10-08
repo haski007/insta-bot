@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 const (
@@ -28,7 +31,12 @@ var mapVoice = map[string]struct{}{
 	VoiceShrimmer: {},
 }
 
-func (srv *Service) TextToSpeech(_ context.Context, voice, message string) ([]byte, error) {
+func (srv *Service) TextToSpeech(_ context.Context, voice, message string) (audio []byte, err error) {
+	start := time.Now()
+	defer func() {
+		metrics.ObserveLLM("openai", "tts", start, err)
+	}()
+
 	url := ApiBaseURL + TTSPath
 
 	modelVoice := VoiceDefault

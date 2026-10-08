@@ -29,7 +29,7 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 	if len(args) < 1 { // Changed to 1 since message text is optional when sending media
 		msg := tgbotapi.NewMessage(chatID, "Usage: /w <target_chat_id> [message]")
 		msg.ReplyToMessageID = messageID
-		rcv.bot.Send(msg)
+		rcv.sendAPI(msg)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, "Invalid chat ID. Please provide a valid number.")
 		msg.ReplyToMessageID = messageID
-		rcv.bot.Send(msg)
+		rcv.sendAPI(msg)
 		return
 	}
 
@@ -49,32 +49,32 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 		if len(args) > 1 {
 			photoMsg.Caption = strings.Join(args[1:], " ")
 		}
-		_, err = rcv.bot.Send(photoMsg)
+		_, err = rcv.sendAPI(photoMsg)
 
 	case update.Message.Video != nil:
 		videoMsg := tgbotapi.NewVideo(targetChatID, tgbotapi.FileID(update.Message.Video.FileID))
 		if len(args) > 1 {
 			videoMsg.Caption = strings.Join(args[1:], " ")
 		}
-		_, err = rcv.bot.Send(videoMsg)
+		_, err = rcv.sendAPI(videoMsg)
 
 	case update.Message.Document != nil:
 		docMsg := tgbotapi.NewDocument(targetChatID, tgbotapi.FileID(update.Message.Document.FileID))
 		if len(args) > 1 {
 			docMsg.Caption = strings.Join(args[1:], " ")
 		}
-		_, err = rcv.bot.Send(docMsg)
+		_, err = rcv.sendAPI(docMsg)
 
 	case update.Message.Voice != nil:
 		voiceMsg := tgbotapi.NewVoice(targetChatID, tgbotapi.FileID(update.Message.Voice.FileID))
 		if len(args) > 1 {
 			voiceMsg.Caption = strings.Join(args[1:], " ")
 		}
-		_, err = rcv.bot.Send(voiceMsg)
+		_, err = rcv.sendAPI(voiceMsg)
 
 	case update.Message.VideoNote != nil:
 		videoNoteMsg := tgbotapi.NewVideoNote(targetChatID, 0, tgbotapi.FileID(update.Message.VideoNote.FileID))
-		_, err = rcv.bot.Send(videoNoteMsg)
+		_, err = rcv.sendAPI(videoNoteMsg)
 
 	default:
 		// If no media in original message, check for reply message
@@ -88,42 +88,42 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 				if len(args) > 1 {
 					photoMsg.Caption = strings.Join(args[1:], " ")
 				}
-				_, err = rcv.bot.Send(photoMsg)
+				_, err = rcv.sendAPI(photoMsg)
 
 			case replyMsg.Video != nil:
 				videoMsg := tgbotapi.NewVideo(targetChatID, tgbotapi.FileID(replyMsg.Video.FileID))
 				if len(args) > 1 {
 					videoMsg.Caption = strings.Join(args[1:], " ")
 				}
-				_, err = rcv.bot.Send(videoMsg)
+				_, err = rcv.sendAPI(videoMsg)
 
 			case replyMsg.Document != nil:
 				docMsg := tgbotapi.NewDocument(targetChatID, tgbotapi.FileID(replyMsg.Document.FileID))
 				if len(args) > 1 {
 					docMsg.Caption = strings.Join(args[1:], " ")
 				}
-				_, err = rcv.bot.Send(docMsg)
+				_, err = rcv.sendAPI(docMsg)
 
 			case replyMsg.Voice != nil:
 				voiceMsg := tgbotapi.NewVoice(targetChatID, tgbotapi.FileID(replyMsg.Voice.FileID))
 				if len(args) > 1 {
 					voiceMsg.Caption = strings.Join(args[1:], " ")
 				}
-				_, err = rcv.bot.Send(voiceMsg)
+				_, err = rcv.sendAPI(voiceMsg)
 
 			case replyMsg.VideoNote != nil:
 				videoNoteMsg := tgbotapi.NewVideoNote(targetChatID, 0, tgbotapi.FileID(replyMsg.VideoNote.FileID))
-				_, err = rcv.bot.Send(videoNoteMsg)
+				_, err = rcv.sendAPI(videoNoteMsg)
 
 			default:
 				// If no media, just forward the message text if it exists
 				if len(args) > 1 {
 					msg := tgbotapi.NewMessage(targetChatID, strings.Join(args[1:], " "))
-					_, err = rcv.bot.Send(msg)
+					_, err = rcv.sendAPI(msg)
 				} else {
 					msg := tgbotapi.NewMessage(chatID, "No message or media to send.")
 					msg.ReplyToMessageID = messageID
-					rcv.bot.Send(msg)
+					rcv.sendAPI(msg)
 					return
 				}
 			}
@@ -131,7 +131,7 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 			if err != nil {
 				errorMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Failed to send media: %v", err))
 				errorMsg.ReplyToMessageID = messageID
-				rcv.bot.Send(errorMsg)
+				rcv.sendAPI(errorMsg)
 				return
 			}
 
@@ -139,17 +139,17 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 			// No media and no reply message, just send text if provided
 			if len(args) > 1 {
 				msg := tgbotapi.NewMessage(targetChatID, strings.Join(args[1:], " "))
-				_, err = rcv.bot.Send(msg)
+				_, err = rcv.sendAPI(msg)
 				if err != nil {
 					errorMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Failed to send message: %v", err))
 					errorMsg.ReplyToMessageID = messageID
-					rcv.bot.Send(errorMsg)
+					rcv.sendAPI(errorMsg)
 					return
 				}
 			} else {
 				msg := tgbotapi.NewMessage(chatID, "No message to send.")
 				msg.ReplyToMessageID = messageID
-				rcv.bot.Send(msg)
+				rcv.sendAPI(msg)
 				return
 			}
 		}
@@ -158,5 +158,5 @@ func (rcv *InstaBotService) cmdWriteToChat(update tgbotapi.Update) {
 	// Send confirmation to the command sender
 	confirmMsg := tgbotapi.NewMessage(chatID, "Message sent successfully! "+emoji.Check)
 	confirmMsg.ReplyToMessageID = messageID
-	rcv.bot.Send(confirmMsg)
+	rcv.sendAPI(confirmMsg)
 }

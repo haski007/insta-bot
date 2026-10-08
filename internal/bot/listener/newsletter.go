@@ -3,6 +3,8 @@ package listener
 import (
 	"fmt"
 	"time"
+
+	"github.com/haski007/insta-bot/internal/metrics"
 )
 
 func (rcv *InstaBotService) RunNewsLetter() {
@@ -22,7 +24,9 @@ LOOP:
 			break LOOP
 		case t := <-ticker.C:
 			if t.In(location).Hour() == 19 && t.Minute() == 00 {
-				if err := rcv.sendStartupNewsletter(); err != nil {
+				err := rcv.sendStartupNewsletter()
+				metrics.ObserveMonitor("newsletter", err)
+				if err != nil {
 					rcv.log.WithError(err).Error("[RunNewsLetter] sendStartupNewsletter")
 					rcv.NotifyCreator(fmt.Sprintf("[RunNewsLetter] sendStartupNewsletter err: %s\n", err))
 				}
