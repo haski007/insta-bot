@@ -149,3 +149,26 @@ func SetRedisReadonly(readonly bool) {
 func ObserveAnglicismHandler(outcome string, start time.Time) {
 	anglicismHandlerDuration.WithLabelValues(outcome).Observe(time.Since(start).Seconds())
 }
+
+// Pre-create rarely-hit series at zero. Without this a series is born at its first
+// observation, and increase()/rate() can't count that first sample — so low-traffic
+// paths (TikTok, stories) never show up on dashboards.
+func init() {
+	for _, route := range []string{"instagram", "stories", "tiktok", "instagram_disabled", "tiktok_disabled", "instagram_unsupported"} {
+		messageRoutesTotal.WithLabelValues(route)
+	}
+	for _, kind := range []string{"instagram", "stories", "tiktok"} {
+		messageHandlerDuration.WithLabelValues(kind)
+	}
+	for _, st := range []string{"ok", "error"} {
+		externalRequestDuration.WithLabelValues("tiktok", "get_media", st)
+		externalRequestDuration.WithLabelValues("instloader", "post", st)
+		externalRequestDuration.WithLabelValues("instloader", "story", st)
+		for _, source := range []string{"tiktok", "instagram", "other"} {
+			mediaDownloadDuration.WithLabelValues(source, st)
+		}
+		for _, kind := range []string{"photo", "video", "media_group"} {
+			telegramSendDuration.WithLabelValues(kind, st)
+		}
+	}
+}
