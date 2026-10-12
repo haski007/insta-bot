@@ -150,9 +150,9 @@ func ObserveAnglicismHandler(outcome string, start time.Time) {
 	anglicismHandlerDuration.WithLabelValues(outcome).Observe(time.Since(start).Seconds())
 }
 
-// Pre-create rarely-hit series at zero. Without this a series is born at its first
-// observation, and increase()/rate() can't count that first sample — so low-traffic
-// paths (TikTok, stories) never show up on dashboards.
+	// Pre-create rarely-hit series at zero. Without this a series is born at its first
+	// observation, and increase()/rate() can't count that first sample — so low-traffic
+	// paths (TikTok, stories, YouTube Shorts) never show up on dashboards.
 func init() {
 	for _, route := range []string{"instagram", "stories", "tiktok", "youtube_shorts", "instagram_disabled", "tiktok_disabled", "youtube_shorts_disabled", "instagram_unsupported", "youtube_ignored"} {
 		messageRoutesTotal.WithLabelValues(route)

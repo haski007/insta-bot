@@ -15,7 +15,7 @@
       "gridPos": { "h": 5, "w": 8, "x": 0, "y": 0 },
       "id": 1,
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name" },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, kind) (increase(insta_bot_message_handler_duration_seconds_bucket{kind=~\"instagram|stories|tiktok\"}[$__range])))", "instant": true, "legendFormat": "{{kind}}", "refId": "A" }],
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, kind) (increase(insta_bot_message_handler_duration_seconds_bucket{kind=~\"instagram|stories|tiktok|youtube_shorts\"}[$__range])))", "instant": true, "legendFormat": "{{kind}}", "refId": "A" }],
       "title": "Handler p95 (period)",
       "type": "stat"
     },
@@ -28,7 +28,7 @@
       "gridPos": { "h": 5, "w": 8, "x": 8, "y": 0 },
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name" },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (route) (increase(insta_bot_message_routes_total{route=~\"instagram|stories|tiktok|instagram_disabled|tiktok_disabled|instagram_unsupported\"}[$__range]))", "instant": true, "legendFormat": "{{route}}", "refId": "A" }],
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (route) (increase(insta_bot_message_routes_total{route=~\"instagram|stories|tiktok|youtube_shorts|instagram_disabled|tiktok_disabled|youtube_shorts_disabled|instagram_unsupported|youtube_ignored\"}[$__range]))", "instant": true, "legendFormat": "{{route}}", "refId": "A" }],
       "title": "Media routes (period)",
       "type": "stat"
     },
@@ -41,7 +41,7 @@
       "gridPos": { "h": 5, "w": 8, "x": 16, "y": 0 },
       "id": 3,
       "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name" },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (service) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok\", status=\"error\"}[$__range])) / sum by (service) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok\"}[$__range]))", "instant": true, "legendFormat": "{{service}}", "refId": "A" }],
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (service) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok|youtube\", status=\"error\"}[$__range])) / sum by (service) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok|youtube\"}[$__range]))", "instant": true, "legendFormat": "{{service}}", "refId": "A" }],
       "title": "Fetch error rate (period)",
       "type": "stat"
     },
@@ -52,10 +52,10 @@
       "id": 4,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.5, sum by (le, service, operation) (rate(insta_bot_external_request_duration_seconds_bucket{service=~\"instloader|tiktok\"}[$__rate_interval])))", "legendFormat": "{{service}} {{operation}} p50", "refId": "A" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, service, operation) (rate(insta_bot_external_request_duration_seconds_bucket{service=~\"instloader|tiktok\"}[$__rate_interval])))", "legendFormat": "{{service}} {{operation}} p95", "refId": "B" }
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.5, sum by (le, service, operation) (rate(insta_bot_external_request_duration_seconds_bucket{service=~\"instloader|tiktok|youtube\"}[$__rate_interval])))", "legendFormat": "{{service}} {{operation}} p50", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, service, operation) (rate(insta_bot_external_request_duration_seconds_bucket{service=~\"instloader|tiktok|youtube\"}[$__rate_interval])))", "legendFormat": "{{service}} {{operation}} p95", "refId": "B" }
       ],
-      "title": "Instloader / TikTok API latency",
+      "title": "Instloader / TikTok / YouTube API latency",
       "type": "timeseries"
     },
     {
@@ -78,7 +78,7 @@
       "id": 6,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, kind) (rate(insta_bot_message_handler_duration_seconds_bucket{kind=~\"instagram|stories|tiktok\"}[$__rate_interval])))", "legendFormat": "{{kind}} p95", "refId": "A" }
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by (le, kind) (rate(insta_bot_message_handler_duration_seconds_bucket{kind=~\"instagram|stories|tiktok|youtube_shorts\"}[$__rate_interval])))", "legendFormat": "{{kind}} p95", "refId": "A" }
       ],
       "title": "End-to-end media handler p95",
       "type": "timeseries"
@@ -103,7 +103,7 @@
       "interval": "5m",
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (service, operation, status) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok\"}[$__interval]))", "legendFormat": "{{service}} {{operation}} {{status}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (service, operation, status) (increase(insta_bot_external_request_duration_seconds_count{service=~\"instloader|tiktok|youtube\"}[$__interval]))", "legendFormat": "{{service}} {{operation}} {{status}}", "refId": "A" },
         { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (source, status) (increase(insta_bot_media_download_duration_seconds_count[$__interval]))", "legendFormat": "download {{source}} {{status}}", "refId": "B" }
       ],
       "title": "Fetches and downloads by status",
@@ -117,7 +117,7 @@
   "time": { "from": "now-24h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Media (Instagram / TikTok)",
+  "title": "Media (Instagram / TikTok / YouTube Shorts)",
   "uid": "media",
   "version": 1
 }
