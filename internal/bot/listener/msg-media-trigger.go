@@ -94,6 +94,8 @@ func mediaDownloadSource(rawURL string) string {
 		return "tiktok"
 	case strings.Contains(host, "instagram") || strings.Contains(host, "cdninstagram") || strings.Contains(host, "fbcdn"):
 		return "instagram"
+	case strings.Contains(host, "youtube") || strings.Contains(host, "youtu.be") || strings.Contains(host, "savenow.to") || strings.Contains(host, "googlevideo"):
+		return "youtube"
 	default:
 		return "other"
 	}
@@ -112,8 +114,11 @@ func downloadMediaBytesUnmetered(rawURL string) ([]byte, error) {
 		return nil, fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("User-Agent", mediaUserAgent)
-	if strings.Contains(rawURL, "tikwm.com") {
+	switch {
+	case strings.Contains(rawURL, "tikwm.com"):
 		req.Header.Set("Referer", "https://www.tikwm.com/")
+	case strings.Contains(rawURL, "savenow.to"):
+		req.Header.Set("Referer", "https://p.savenow.to/")
 	}
 
 	resp, err := mediaHTTPClient.Do(req)

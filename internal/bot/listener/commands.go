@@ -16,8 +16,8 @@ var publicCommands = []tgbotapi.BotCommand{
 	{Command: "drop_my_gpt", Description: "Скинути мою розмову з GPT"},
 	{Command: "drop_my_grok", Description: "Скинути мою розмову з Grok"},
 
-	{Command: "disable_loader", Description: "Вимкнути завантаження Instagram/TikTok у чаті"},
-	{Command: "enable_loader", Description: "Увімкнути завантаження Instagram/TikTok у чаті"},
+	{Command: "disable_loader", Description: "Вимкнути завантаження Instagram/TikTok/Shorts у чаті"},
+	{Command: "enable_loader", Description: "Увімкнути завантаження Instagram/TikTok/Shorts у чаті"},
 
 	{Command: "lets_play", Description: "Покликати гравців у CS:GO: /lets_play [HH:MM]"},
 	{Command: "lets_play_pubg", Description: "Покликати гравців у PUBG"},

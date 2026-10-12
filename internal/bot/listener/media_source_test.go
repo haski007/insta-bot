@@ -8,6 +8,8 @@ func TestMediaDownloadSource(t *testing.T) {
 		"https://v16-webapp-prime.tiktok.com/video/1":                 "tiktok",
 		"https://scontent.cdninstagram.com/v/t51.2885-15/x.jpg":        "instagram",
 		"https://instagram.fhel3-1.fna.fbcdn.net/v/t51.2885-15/x.jpg": "instagram",
+		"https://penny83.savenow.to/api/v2/download/abc":              "youtube",
+		"https://rr1---sn-xxx.googlevideo.com/videoplayback":          "youtube",
 		"https://example.com/file.mp4":                                "other",
 		"://bad": "other",
 	}

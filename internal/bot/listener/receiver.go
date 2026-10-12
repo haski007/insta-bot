@@ -209,9 +209,23 @@ func (rcv *InstaBotService) StartPool() error {
 				}
 				rcv.goMessage("tiktok", update, rcv.msgTikTokTrigger)
 
-			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl):
+			case isYouTubeShortsURL(update.Message.Text):
+				loaderEnabled, err := rcv.storage.IsChatLoaderEnabled(update.Message.Chat.ID)
+				if err != nil {
+					rcv.log.WithError(err).Error("IsChatLoaderEnabled")
+				}
+				if !loaderEnabled {
+					metrics.IncRoute("youtube_shorts_disabled")
+					rcv.log.Infof("Ignore youtube shorts url: %s due to loader disabled", update.Message.Text)
+					break
+				}
+				rcv.goMessage("youtube_shorts", update, rcv.msgYoutubeShortsTrigger)
+
+			case strings.Contains(update.Message.Text, publisher.YoutubeVideoBaseUrl),
+				strings.Contains(update.Message.Text, publisher.YoutubeBaseUrl),
+				strings.Contains(update.Message.Text, "youtu.be/"):
 				metrics.IncRoute("youtube_ignored")
-				rcv.log.Infof("Ignore youtube: %s due to broken downloader", update.Message.Text)
+				rcv.log.Infof("Ignore youtube: %s (only shorts are supported)", update.Message.Text)
 
 			case strings.HasPrefix(update.Message.Text, "?") && len(update.Message.Text) > 1:
 				rcv.goMessage("gpt_question", update, rcv.msgChatGPTQuestion)
